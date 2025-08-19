@@ -19,7 +19,7 @@ const SignIn = ({ action }: SignInProps) => {
         <Form action={formAction} className='max-w-md mx-auto my-16 p-8 bg-white rounded-lg shadow-md'>
             <h1 className='text-2xl font-bold text-center mb-2'>Welcome Back!</h1>
             <p className='text-center text-sm text-rose-600 font-semibold mb-2'>🔥 MEMBER EXCLUSIVE 🔥</p>
-            <p className='text-center text-sm text-gray-600 mb-6'>Sign in to access your exclusive member deals.</p>
+                            <p className='text-center text-sm text-gray-600 mb-6'>Sign in to access your exclusive Utrabeauty member benefits.</p>
 
             <div className='space-y-6'>
                 {/* Email */}

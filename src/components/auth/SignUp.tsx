@@ -17,7 +17,7 @@ const SignUp = ({ action }: SignUpProps) => {
 
     return (
         <Form action={formAction} className='max-w-md mx-auto my-16 p-8 bg-white rounded-lg shadow-md'>
-            <h1 className='text-2xl font-bold text-center mb-2'>Join the DEAL Revolution!</h1>
+                            <h1 className='text-2xl font-bold text-center mb-2'>Join the Utrabeauty Revolution!</h1>
             <p className='text-center text-sm text-rose-600 font-semibold mb-2'>🔥 LIMITED TIME OFFER 🔥</p>
             <p className='text-center text-sm text-gray-600 mb-6'>Sign up now and get 90% OFF your first order!</p>
 
