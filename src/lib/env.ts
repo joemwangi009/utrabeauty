@@ -33,7 +33,7 @@ function loadEnv() {
 
   const env = {
     DATABASE_URL: process.env.DATABASE_URL || 'postgresql://placeholder',
-    NEXT_PUBLIC_SANITY_PROJECT_ID: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'placeholder',
+    NEXT_PUBLIC_SANITY_PROJECT_ID: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'i10ney18',
     NEXT_PUBLIC_SANITY_DATASET: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
     NEXT_PUBLIC_SANITY_API_VERSION: process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2024-12-06',
     SANITY_API_READ_TOKEN: process.env.SANITY_API_READ_TOKEN || 'placeholder_token',
