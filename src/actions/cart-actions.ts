@@ -16,9 +16,19 @@ import { revalidatePath } from "next/cache";
 
 export const createCartAction = async () => {
     const { user } = await getCurrentSession();
-
-    const cart = await createCart(crypto.randomUUID(), user?.id);
-    return cart;
+    
+    try {
+        // Generate a new UUID for the cart
+        const cartId = crypto.randomUUID();
+        const cart = await createCart(cartId, user?.id);
+        return cart;
+    } catch (error) {
+        console.error('Error creating cart:', error);
+        // If there's still an error, try with a different UUID
+        const fallbackCartId = crypto.randomUUID() + '-' + Date.now();
+        const cart = await createCart(fallbackCartId, user?.id);
+        return cart;
+    }
 }
 
 export const getOrCreateCart = async (cartId?: string | null) => {

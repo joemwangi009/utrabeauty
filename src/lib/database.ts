@@ -138,6 +138,13 @@ export const deleteExpiredSessions = async () => {
 // ===== CART MANAGEMENT FUNCTIONS =====
 
 export const createCart = async (cartId: string, userId?: number) => {
+  // First check if cart already exists
+  const existingCart = await findCartById(cartId);
+  if (existingCart) {
+    return existingCart;
+  }
+
+  // If cart doesn't exist, create it
   const query = `
     INSERT INTO "Cart" (id, "userId") 
     VALUES ($1, $2) 
@@ -244,6 +251,37 @@ export const clearCart = async (cartId: string) => {
 export const deleteCart = async (cartId: string) => {
   const query = `DELETE FROM "Cart" WHERE id = $1`;
   await executeQuery(query, [cartId]);
+};
+
+// Clean up duplicate carts and ensure data integrity
+export const cleanupDuplicateCarts = async () => {
+  // Find carts with duplicate IDs (shouldn't happen with proper constraints, but just in case)
+  const duplicateQuery = `
+    SELECT id, COUNT(*) as count
+    FROM "Cart"
+    GROUP BY id
+    HAVING COUNT(*) > 1
+  `;
+  
+  const duplicates = await executeQuery(duplicateQuery);
+  
+  if (duplicates.rows.length > 0) {
+    console.warn('Found duplicate carts:', duplicates.rows);
+    
+    // Keep only the first cart for each ID and delete the rest
+    for (const duplicate of duplicates.rows) {
+      const deleteQuery = `
+        DELETE FROM "Cart" 
+        WHERE id = $1 
+        AND ctid NOT IN (
+          SELECT ctid FROM "Cart" WHERE id = $1 LIMIT 1
+        )
+      `;
+      await executeQuery(deleteQuery, [duplicate.id]);
+    }
+  }
+  
+  return duplicates.rows.length;
 };
 
 // ===== WHEEL OF FORTUNE FUNCTIONS =====
