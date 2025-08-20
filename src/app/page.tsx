@@ -2,6 +2,7 @@ import { getCurrentSession } from "@/actions/auth";
 import { getWheelOfFortuneConfiguration } from "@/actions/wheel-of-fortune-actions";
 import SalesCampaignBanner from "@/components/layout/SalesCampaignBanner";
 import WheelOfFortune from "@/components/layout/WheelOfFortune";
+import WheelOfFortuneEligibilityBanner from "@/components/layout/WheelOfFortuneEligibilityBanner";
 import ProductGrid from "@/components/product/ProductGrid";
 import { getAllProducts } from "@/sanity/lib/client";
 
@@ -15,12 +16,13 @@ const Home = async () => {
     return (
         <div>
           <SalesCampaignBanner />
+          <WheelOfFortuneEligibilityBanner />
           <WheelOfFortune
             products={randomProducts}
             winningIndex={winningIndex}
           />
 
-          <section className='container mx-auto py-8'>
+          <section id="products" className='container mx-auto py-8'>
             <ProductGrid products={products} />
           </section>
         </div>

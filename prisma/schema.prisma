@@ -21,6 +21,7 @@ model User {
 
   sessions Session[]
   cart     Cart?
+  wheelOfFortuneSpins WheelOfFortuneSpin[]
 }
 
 model Session {
@@ -51,4 +52,13 @@ model Cart {
   user   User? @relation(references: [id], fields: [userId], onDelete: Cascade)
 
   items CartLineItem[]
+}
+
+model WheelOfFortuneSpin {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  spunAt    DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(references: [id], fields: [userId], onDelete: Cascade)
 }

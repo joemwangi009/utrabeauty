@@ -1,11 +1,12 @@
 'use client';
 
 import { addWinningItemToCart } from '@/actions/cart-actions';
+import { checkWheelOfFortuneEligibility, recordWheelOfFortuneSpin } from '@/actions/wheel-of-fortune-actions';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Product } from '@/sanity.types';
 import { urlFor } from '@/sanity/lib/image';
 import { useCartStore } from '@/stores/cart-store';
-import { Loader2, ShoppingCart } from 'lucide-react';
+import { Loader2, ShoppingCart, Lock, DollarSign, Gift } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -250,48 +251,76 @@ const WheelOfFortune = ({ products, winningIndex }: WheelOfFortuneProps) => {
     
     const [wheelStyle, setWheelStyle] = useState<React.CSSProperties>({});
 
-    useEffect(() => {
-        const hasPlayed = localStorage.getItem("has-played-wheel-of-fortune");
-        if(!hasPlayed) {
-            const timer = setTimeout(() => {
-                setIsOpen(true);
-            }, 2000);
-            return () => clearTimeout(timer);
-        }
-    });
+    // Eligibility state
+    const [eligibility, setEligibility] = useState<any>(null);
+    const [isCheckingEligibility, setIsCheckingEligibility] = useState<boolean>(false);
 
-    const handleSpin = () => {
-        if(isSpinning || hasSpun) {
+    useEffect(() => {
+        // Check eligibility when component mounts
+        checkEligibility();
+    }, []);
+
+    const checkEligibility = async () => {
+        setIsCheckingEligibility(true);
+        try {
+            const result = await checkWheelOfFortuneEligibility();
+            setEligibility(result);
+            
+            // Only show wheel if user is eligible
+            if (result.isEligible) {
+                const timer = setTimeout(() => {
+                    setIsOpen(true);
+                }, 2000);
+                return () => clearTimeout(timer);
+            }
+        } catch (error) {
+            console.error("Error checking eligibility:", error);
+        } finally {
+            setIsCheckingEligibility(false);
+        }
+    };
+
+    const handleSpin = async () => {
+        if(isSpinning || hasSpun || !eligibility?.isEligible) {
             return;
         }
 
-        setIsSpinning(true);
-        setHasSpun(true);
-        setShowWininngItem(false);
-
-        setWheelStyle({animation: 'none'});
-
-        requestAnimationFrame(() => {
-            const numberOfSpins = 5;
-            const degreesPerProduct = 360 / products.length;
-            const spinToIndex = winningIndex;
-            const randomOffset = degreesPerProduct * (0.2 + Math.random() * 0.6);
+        try {
+            // Record the spin in the database
+            await recordWheelOfFortuneSpin();
             
-            const degrees = (numberOfSpins * 360) + (spinToIndex * degreesPerProduct) - (degreesPerProduct/2) + randomOffset
+            setIsSpinning(true);
+            setHasSpun(true);
+            setShowWininngItem(false);
 
-            setWheelStyle({
-                transform: `rotate(-${degrees}deg)`,
-                transition: 'transform 4s cubic-bezier(0.17, 0.67, 0.08, 0.99)',
-                animation: 'none'
-            });
-            setTimeout(() => {
-                setIsSpinning(false);
+            setWheelStyle({animation: 'none'});
 
+            requestAnimationFrame(() => {
+                const numberOfSpins = 5;
+                const degreesPerProduct = 360 / products.length;
+                const spinToIndex = winningIndex;
+                const randomOffset = degreesPerProduct * (0.2 + Math.random() * 0.6);
+                
+                const degrees = (numberOfSpins * 360) + (spinToIndex * degreesPerProduct) - (degreesPerProduct/2) + randomOffset
+
+                setWheelStyle({
+                    transform: `rotate(-${degrees}deg)`,
+                    transition: 'transform 4s cubic-bezier(0.17, 0.67, 0.08, 0.99)',
+                    animation: 'none'
+                });
                 setTimeout(() => {
-                    setShowWininngItem(true);
-                }, 500);
-            }, 4000)
-        })
+                    setIsSpinning(false);
+
+                    setTimeout(() => {
+                        setShowWininngItem(true);
+                    }, 500);
+                }, 4000)
+            });
+        } catch (error) {
+            console.error("Error recording spin:", error);
+            // Reset state if recording fails
+            setHasSpun(false);
+        }
     }
 
     return (
@@ -299,24 +328,90 @@ const WheelOfFortune = ({ products, winningIndex }: WheelOfFortuneProps) => {
             <DialogContent className='sm:max-w-[800px] p-0'>
                 <DialogTitle>
                     <div className='p-6 text-center relative overflow-hidden'>
-                        <div className='absolute inset-0 bg-gradient-to-r from-red-500/20 to-orange-500/20 animate-pulse' />
-                        <h2 className='text-2xl font-bold mb-2 animate-bounce'>
-                            Spin & Win! 🎁
+                        <div className='absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 animate-pulse' />
+                        <h2 className='text-2xl font-bold mb-2 animate-bounce text-gray-800'>
+                            🎁 Exclusive Wheel of Fortune 🎁
                         </h2>
-                        <p className='text-muted-foreground mb-4 relative animate-pulse'>
-                            Try your luck! Spin the wheel for a chance to win amazing prizes!
+                        <p className='text-gray-600 mb-4 relative animate-pulse font-medium'>
+                            Congratulations! You've unlocked the exclusive wheel of fortune for loyal customers.
                         </p>
-                        <div className='absolute -left-10 top-1/2 h-8 w-40 bg-white/20 rotate-45 animate-[shine_2s_infinite]' />
+                        <div className='bg-emerald-100 border border-emerald-200 rounded-lg p-3 mb-4'>
+                            <p className='text-sm text-emerald-800 font-medium'>
+                                💎 VIP Customer Benefit - Spin once per eligible purchase
+                            </p>
+                        </div>
+                        <div className='absolute -left-10 top-1/2 h-8 w-40 bg-emerald-500/20 rotate-45 animate-[shine_2s_infinite]' />
                     </div>
                 </DialogTitle>
 
                 <div className='flex flex-col items-center justify-center p-8 gap-4 bg-gray-50'>
-                    <div 
-                        className={`
-                            relative w-[350px] h-[350px] md:w-[600px] md:h-[600px] transition-all duration-1000 ease-in-out transform
-                            ${showWinningItem ? 'scale-0 opacity-0 rotate-180' : 'scale-100 opacity-100'}
-                        `}
-                    >
+                    {/* Eligibility Status Display */}
+                    {eligibility && !eligibility.isEligible && (
+                        <div className='w-full max-w-md bg-white rounded-lg border border-gray-200 p-6 text-center shadow-sm'>
+                            <div className='flex items-center justify-center mb-4'>
+                                <Lock className='w-8 h-8 text-gray-400' />
+                            </div>
+                            <h3 className='text-lg font-semibold text-gray-900 mb-2'>
+                                Wheel of Fortune Locked
+                            </h3>
+                            <p className='text-sm text-gray-600 mb-4'>
+                                {eligibility.reason}
+                            </p>
+                            
+                            {!eligibility.hasSpunToday && (
+                                <div className='bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4'>
+                                    <div className='flex items-center justify-center gap-2 mb-2'>
+                                        <DollarSign className='w-5 h-5 text-blue-600' />
+                                        <span className='text-sm font-medium text-blue-800'>
+                                            Purchase Progress
+                                        </span>
+                                    </div>
+                                    <div className='flex items-center justify-between text-sm'>
+                                        <span className='text-gray-600'>Total Spent:</span>
+                                        <span className='font-semibold text-blue-600'>
+                                            ${eligibility.totalSpent.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <div className='flex items-center justify-between text-sm'>
+                                        <span className='text-gray-600'>Required:</span>
+                                        <span className='font-semibold text-blue-600'>
+                                            ${eligibility.minimumRequired.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <div className='w-full bg-gray-200 rounded-full h-2 mt-2'>
+                                        <div 
+                                            className='bg-blue-600 h-2 rounded-full transition-all duration-300'
+                                            style={{ 
+                                                width: `${Math.min(100, (eligibility.totalSpent / eligibility.minimumRequired) * 100)}%` 
+                                            }}
+                                        ></div>
+                                    </div>
+                                    <p className='text-xs text-blue-600 mt-2'>
+                                        {eligibility.remainingAmount > 0 
+                                            ? `Spend $${eligibility.remainingAmount.toFixed(2)} more to unlock!`
+                                            : 'You\'re almost there!'
+                                        }
+                                    </p>
+                                </div>
+                            )}
+                            
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className='w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors'
+                            >
+                                Continue Shopping
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Wheel Display - Only show if eligible */}
+                    {eligibility?.isEligible && (
+                        <div 
+                            className={`
+                                relative w-[350px] h-[350px] md:w-[600px] md:h-[600px] transition-all duration-1000 ease-in-out transform
+                                ${showWinningItem ? 'scale-0 opacity-0 rotate-180' : 'scale-100 opacity-100'}
+                            `}
+                        >
                         {/* Red pointer */}
                         <div 
                             className={`
@@ -363,55 +458,56 @@ const WheelOfFortune = ({ products, winningIndex }: WheelOfFortuneProps) => {
                         </div>
                     </div>
 
-                    <div
-                        className={`
-                            absolute inset-0 flex items-center justify-center p-8
-                            transition-all duration-1000 ease-in-out transform
-                            ${!showWinningItem ? 'scale-0 opacity-0 translate-y-full' : 'scale-100 opacity-100 translate-y-0'}
-                        `}
-                    >
-                        {hasSpun && !isSpinning && (
-                            <WinningItem
-                                product={products[winningIndex]}
-                                onClose={() => setIsOpen(false)}
-                            />
-                        )}
-                    </div>
+                        </div>
 
-                    <button
-                        onClick={handleSpin}
-                        disabled={isSpinning || hasSpun}
-                        className={`
-                            relative px-8 py-4 rounded-full font-bold text-white text-lg transition-all
-                            bg-gradient-to-r from-red-500 via-yellow-500 to-red-500
-                            bg-[length:200%_100%] animate-[gradient-x_2s_linear_infinite]
-                            border-4 border-yellow-300
-                            shadow-[0_0_20px_rgba(234,179,8,0.5)]
-                            hover:shadow-[0_0_30px_rgba(234,179,8,0.8)]
-                            hover:scale-105
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                            ${showWinningItem ? 'opacity-0 scale-0 -translate-y-full' : ''}
-                            before:absolute before:inset-0 before:bg-white/20 before:animate-[pulse_1s_ease-in-out_infinite]
-                        `}
-                    >
-                        {isSpinning ? (
-                            <span className='inline-flex items-center gap-2'>
-                                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Spinning...
-                            </span>
-                        ) : hasSpun ? (
-                            "🎉 Congratulations! 🎉"
-                        ) : (
+                        <div
+                            className={`
+                                absolute inset-0 flex items-center justify-center p-8
+                                transition-all duration-1000 ease-in-out transform
+                                ${!showWinningItem ? 'scale-0 opacity-0 translate-y-full' : 'scale-100 opacity-100 translate-y-0'}
+                            `}
+                        >
+                            {hasSpun && !isSpinning && (
+                                <WinningItem
+                                    product={products[winningIndex]}
+                                    onClose={() => setIsOpen(false)}
+                                />
+                            )}
+                        </div>
+
+                        <button
+                            onClick={handleSpin}
+                            disabled={isSpinning || hasSpun}
+                            className={`
+                                relative px-8 py-4 rounded-full font-bold text-white text-lg transition-all
+                                bg-gradient-to-r from-emerald-500 to-blue-600
+                                border-2 border-emerald-400
+                                shadow-[0_0_20px_rgba(16,185,129,0.3)]
+                                hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]
+                                hover:scale-105
+                                disabled:opacity-50 disabled:cursor-not-allowed
+                                ${showWinningItem ? 'opacity-0 scale-0 -translate-y-full' : ''}
+                            `}
+                        >
+                            {isSpinning ? (
+                                <span className='inline-flex items-center gap-2'>
+                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Spinning...
+                                </span>
+                            ) : hasSpun ? (
+                                "🎉 Congratulations! 🎉"
+                                                    ) : (
                             <>
-                                <span className='animate-[pulse_1s_ease-in-out_infinite]'>🎁</span>
-                                {" SPIN NOW! "}
-                                <span className='animate-[pulse_1s_ease-in-out_infinite]'>🎁</span>
+                                <span className='animate-pulse'>🎁</span>
+                                {" SPIN THE WHEEL "}
+                                <span className='animate-pulse'>🎁</span>
                             </>
                         )}
-                    </button>
+                        </button>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>
