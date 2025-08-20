@@ -456,9 +456,6 @@ const WheelOfFortune = ({ products, winningIndex }: WheelOfFortuneProps) => {
                                 </div>
                             ))}
                         </div>
-                    </div>
-
-                        </div>
 
                         <div
                             className={`
@@ -499,13 +496,13 @@ const WheelOfFortune = ({ products, winningIndex }: WheelOfFortuneProps) => {
                                 </span>
                             ) : hasSpun ? (
                                 "🎉 Congratulations! 🎉"
-                                                    ) : (
-                            <>
-                                <span className='animate-pulse'>🎁</span>
-                                {" SPIN THE WHEEL "}
-                                <span className='animate-pulse'>🎁</span>
-                            </>
-                        )}
+                            ) : (
+                                <>
+                                    <span className='animate-pulse'>🎁</span>
+                                    {" SPIN THE WHEEL "}
+                                    <span className='animate-pulse'>🎁</span>
+                                </>
+                            )}
                         </button>
                     )}
                 </div>
