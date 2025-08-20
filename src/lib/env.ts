@@ -28,12 +28,8 @@ const envSchema = z.object({
 
 // Function to load environment variables with fallbacks
 function loadEnv() {
-  // Try to load from .env file first (for local development)
-  try {
-    require('dotenv').config();
-  } catch (error) {
-    // dotenv not available, continue with process.env
-  }
+  // Environment variables are loaded by the build script
+  // This function just provides fallbacks and validation
 
   const env = {
     DATABASE_URL: process.env.DATABASE_URL || 'postgresql://placeholder',

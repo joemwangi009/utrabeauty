@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
 // Load environment variables from .env file
-require('dotenv').config();
+try {
+  require('dotenv').config();
+} catch (error) {
+  console.log('⚠️  dotenv not available, using system environment variables');
+}
 
 // Log environment variables for debugging (only in development)
 if (process.env.NODE_ENV !== 'production') {
