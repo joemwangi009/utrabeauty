@@ -1,9 +1,11 @@
 import { getCurrentSession } from "@/actions/auth";
 import { getWheelOfFortuneConfiguration } from "@/actions/wheel-of-fortune-actions";
+import BannerCarousel from "@/components/layout/BannerCarousel";
 import SalesCampaignBanner from "@/components/layout/SalesCampaignBanner";
 import WheelOfFortune from "@/components/layout/WheelOfFortune";
 import WheelOfFortuneEligibilityBanner from "@/components/layout/WheelOfFortuneEligibilityBanner";
 import ProductGrid from "@/components/product/ProductGrid";
+import ProductShowcase from "@/components/layout/ProductShowcase";
 import { getAllProducts } from "@/sanity/lib/client";
 
 const Home = async () => {
@@ -16,6 +18,8 @@ const Home = async () => {
     return (
         <div>
           <SalesCampaignBanner />
+          <BannerCarousel />
+          <ProductShowcase />
           <WheelOfFortuneEligibilityBanner />
           <WheelOfFortune
             products={randomProducts}

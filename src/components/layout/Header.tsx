@@ -1,6 +1,7 @@
 'use client';
 import { logoutUser } from '@/actions/auth';
-import HeaderSearchBar from '@/components/layout/HeaderSearchBar';
+import CategoryNavigation from '@/components/layout/CategoryNavigation';
+import ProfessionalSearchBar from '@/components/layout/ProfessionalSearchBar';
 import { useCartStore } from '@/stores/cart-store';
 import { User } from '@prisma/client';
 import Link from 'next/link';
@@ -84,7 +85,7 @@ const Header = ({ user, categorySelector }: HeaderProps) => {
                         </Link>
 
                         <div className='flex flex-1 justify-end items-center gap-2 sm:gap-4'>
-                            <HeaderSearchBar />
+                            <ProfessionalSearchBar />
 
                             {user ? (
                                 <div className='flex items-center gap-2 sm:gap-4'>
@@ -124,6 +125,9 @@ const Header = ({ user, categorySelector }: HeaderProps) => {
                     </div>
                 </div>
             </div>
+            
+            {/* Category Navigation */}
+            <CategoryNavigation />
         </header>
     );
 };
