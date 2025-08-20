@@ -141,11 +141,13 @@ export const useCartStore = create<CartStore>()(
 
             getTotalItems: () => {
                 const { items } = get();
-                return items.reduce((total, item) => total + item.quantity, 0);
+                if (!items || !Array.isArray(items)) return 0;
+                return items.reduce((total, item) => total + (item?.quantity || 0), 0);
             },
             getTotalPrice: () => {
                 const { items } = get();
-                return items.reduce((total, item) => total + item.price * item.quantity, 0);
+                if (!items || !Array.isArray(items)) return 0;
+                return items.reduce((total, item) => total + ((item?.price || 0) * (item?.quantity || 0)), 0);
             },
         }),
         {

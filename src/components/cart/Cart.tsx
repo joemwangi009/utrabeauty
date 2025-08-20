@@ -128,10 +128,15 @@ const Cart = () => {
     }
 
     const totalPrice = getTotalPrice();
+    const totalItems = getTotalItems();
 
     const remainingForFreeShipping = useMemo(() => {
         return Math.max(0, freeShippingAmount - totalPrice);
     }, [totalPrice]);
+
+    // Safety check for items array
+    const safeItems = items || [];
+    const hasItems = safeItems.length > 0;
 
     return (
         <>
@@ -158,7 +163,7 @@ const Cart = () => {
                             <ShoppingCart className='w-5 h-5' />
                             <h2 className='text-lg font-semibold'>Shopping Cart</h2>
                             <span className='bg-gray-200 px-2 py-1 rounded-full text-sm font-medium'>
-                                {getTotalItems()}
+                                {totalItems}
                             </span>
                         </div>
                         <button
@@ -171,7 +176,7 @@ const Cart = () => {
                     
                     {/* Cart Items */}
                     <div className='flex-1 overflow-y-auto'>
-                        {items.length === 0 ? (
+                        {!hasItems ? (
                             <div className='flex flex-col items-center justify-center h-full p-4 text-center'>
                                 <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4'>
                                     <ShoppingCart className='w-8 h-8 text-gray-400' />
@@ -192,7 +197,7 @@ const Cart = () => {
                             </div>
                         ) : (
                             <div className='divide-y'>
-                                {items.map((item) => (
+                                {safeItems.map((item) => (
                                     <CartItem key={'cart-item-'+item.id} item={item} />
                                 ))}
                             </div>
@@ -200,7 +205,7 @@ const Cart = () => {
                     </div>
 
                     {/* Cart Footer */}
-                    {items.length > 0 && (
+                    {hasItems && (
                         <div className='border-t'>
                             {/* Shipping progress */}
                             {remainingForFreeShipping > 0 ? (
