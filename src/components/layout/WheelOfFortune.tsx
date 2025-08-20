@@ -100,129 +100,82 @@ const WinningItem = ({ product, onClose }: {product: Product, onClose: () => voi
             open: state.open,
         }))
     );
+
     const [isAdding, setIsAdding] = useState(false);
-    
+
     const handleAddToCart = async () => {
-        if(!cartId) {
+        if (!cartId) {
+            router.push('/auth/sign-in');
             return;
         }
+
         setIsAdding(true);
-
-        const updatedCart = await addWinningItemToCart(cartId, product);
-        localStorage.setItem("has-played-wheel-of-fortune", 'true');
-
-        setStore(updatedCart);
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        router.refresh();
-        openCart();
-        onClose();
-
-        setIsAdding(false);
-    }
+        try {
+            await addWinningItemToCart(cartId, product);
+            openCart();
+            onClose();
+        } catch (error) {
+            console.error('Error adding winning item to cart:', error);
+        } finally {
+            setIsAdding(false);
+        }
+    };
 
     return (
-        <div className='text-center animate-[slideUp_0.5s_ease-out]'>
-            <div
+        <div className='text-center p-8'>
+            <div className='mb-6'>
+                <h3 className='text-2xl font-bold text-gray-800 mb-2'>
+                    🎉 Congratulations! 🎉
+                </h3>
+                <p className='text-gray-600 mb-4'>
+                    You've won this amazing product!
+                </p>
+            </div>
+
+            <div className='bg-white rounded-lg shadow-lg p-6 mb-6'>
+                <div className='relative w-32 h-32 mx-auto mb-4'>
+                    <Image
+                        src={urlFor(product.image).url()}
+                        alt={product.title}
+                        fill
+                        className='object-cover rounded-lg'
+                    />
+                </div>
+                <h4 className='text-lg font-semibold text-gray-800 mb-2'>
+                    {product.title}
+                </h4>
+                <p className='text-gray-600 mb-2'>
+                    {product.description}
+                </p>
+                <div className='text-2xl font-bold text-emerald-600'>
+                    ${(product.price || 0).toFixed(2)}
+                </div>
+            </div>
+
+            <button
+                onClick={handleAddToCart}
+                disabled={isAdding}
                 className={`
-                    p-8 rounded-xl bg-white shadow-2xl
-                    backdrop-blur-lg bg-opacity-90
-                    border border-white/20
-                    transform transition-all duration-500
-                    hover:shadow-emerald-500/20 hover:scale-[1.01]
+                    mt-6 w-full py-4 px-8 rounded-full font-bold
+                    transition-all duration-300 transform
+                    flex items-center justify-center gap-2
+                    hover:scale-105 active:scale-95
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    bg-gradient-to-r from-emerald-500 to-emerald-600 text-white
                 `}
             >
-                <div className='relative p-4'>
-                    <div className='absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-sky-500/10 animate-pulse rounded-lg' />
-                    <h3
-                        className={`
-                            text-2xl font-bold text-emerald-600 p-4 mb-8
-                            animate-[pulse_2s_ease-in-out_infinite]
-                            [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)]
-                        `}
-                    >
-                        🎉 Congratulations 🎉
-                    </h3>
-
-                    <div className='flex flex-col items-center gap-6'>
-                        {product.image && (
-                            <div className='relative group'>
-                                {/* Sparkle Effects */}
-                                <div
-                                    className={`
-                                        absolute -inset-4 bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500
-                                        rounded-2xl opacity-75 blur-lg animate-pulse group-hover:opacity-100 transition-opacity duration-500
-                                    `}
-                                />
-
-                                {/* Main product content */}
-                                <div className='relative bg-gradient-to-br from-white to-gray-50 p-4 rounded-xl shadow-2xl'>
-                                    {/* Price tag */}
-                                    <div className='absolute -top-3 -right-3 bg-red-600 text-white px-4 py-1 rounded-full font-black text-lg shadow-lg z-10'>
-                                        FREE!
-                                    </div>
-
-                                    {/* Image */}
-                                    <div className='relative rounded-lg overflow-hidden border-2 border-yellow-400/50 shadow-[0_0_15px_rgba(234,179,8,0.3)]'>
-                                        <Image
-                                            src={urlFor(product.image).width(256).url()}
-                                            alt={product.title || 'Winning Product!'}
-                                            className='object-cover transform transition-all duration-500 group-hover:scale-105'
-                                            width={256}
-                                            height={256}
-                                        />
-
-                                        <div className='absolute inset-0 bg-gradient-to-tr from-yellow-400/20 to-transparent' />
-
-                                        <div className='absolute bottom-2 left-2 bg-yellow-500/90 text-white text-xs font-bold px-2 py-1 rounded-full backdrop-blur-sm'>
-                                            Limited Time Only!
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className='text-center space-y-2'>
-                            <h4 className='text-xl font-bold text-gray-800'>
-                                You won:
-                            </h4>
-                            <p className='text-lg text-emerald-600 font-semibold'>
-                                {product.title}
-                            </p>
-                            {product.description && (
-                                <p className='text-sm text-muted-foreground'>
-                                    {product.description}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <button
-                    onClick={handleAddToCart}
-                    disabled={isAdding}
-                    className={`
-                        mt-6 w-full py-4 px-8 rounded-full font-bold
-                        transition-all duration-300 transform
-                        flex items-center justify-center gap-2
-                        hover:scale-105 active:scale-95
-                        disabled:opacity-50 disabled:cursor-not-allowed
-                        bg-gradient-to-r from-emerald-500 to-emerald-600 text-white
-                    `}
-                >
-                    {isAdding ? (
-                        <>
-                            <Loader2 className='w-5 h-5 animate-spin' />
-                            Adding to Cart...
-                        </>
-                    ) : (
-                        <>
-                            <ShoppingCart className='w-5 h-5' />
-                            Claim Your Prize!
-                        </>
-                    )}
-                </button>
-            </div>
+                {isAdding ? (
+                    <>
+                        <Loader2 className='w-5 h-5 animate-spin' />
+                        Adding to Cart...
+                    </>
+                ) : (
+                    <>
+                        <ShoppingCart className='w-5 h-5' />
+                        Claim Your Prize!
+                    </>
+                )}
+            </button>
         </div>
     )
 }
@@ -241,16 +194,14 @@ type WheelOfFortuneProps = {
     products: Product[];
     winningIndex: number;
 }
+
 const WheelOfFortune = ({ products, winningIndex }: WheelOfFortuneProps) => {
-
     const [isOpen, setIsOpen] = useState<boolean>(false);
-
     const [showWinningItem, setShowWininngItem] = useState<boolean>(false);
     const [isSpinning, setIsSpinning] = useState<boolean>(false);
     const [hasSpun, setHasSpun] = useState<boolean>(false);
-    
     const [wheelStyle, setWheelStyle] = useState<React.CSSProperties>({});
-
+    
     // Eligibility state
     const [eligibility, setEligibility] = useState<any>(null);
     const [isCheckingEligibility, setIsCheckingEligibility] = useState<boolean>(false);
@@ -406,104 +357,106 @@ const WheelOfFortune = ({ products, winningIndex }: WheelOfFortuneProps) => {
 
                     {/* Wheel Display - Only show if eligible */}
                     {eligibility?.isEligible && (
-                        <div 
-                            className={`
-                                relative w-[350px] h-[350px] md:w-[600px] md:h-[600px] transition-all duration-1000 ease-in-out transform
-                                ${showWinningItem ? 'scale-0 opacity-0 rotate-180' : 'scale-100 opacity-100'}
-                            `}
-                        >
-                        {/* Red pointer */}
-                        <div 
-                            className={`
-                                absolute top-1/2 right-0 -translate-y-1/2 translate-x-2 w-0 h-0
-                                border-t-[20px] border-t-transparent
-                                border-r-[40px] border-r-red-600
-                                border-b-[20px] border-b-transparent
-                                z-20
-                            `}
-                        />
-
-                        {/* Wheel */}
-                        <div
-                            className={`
-                                absolute inset-0 rounded-full overflow-hidden border-8 border-gray-200
-                                shadow-[0_0_20px_rgba(0,0,0, 0.2)]
-                                ${!isSpinning && !hasSpun && 'animate-[float_3s_ease-in-out_infinite]'}
-                            `}
-
-                            style={{
-                                ...wheelStyle,
-                                animation: !isSpinning && !hasSpun ? 'spin 30s linear infinite' : undefined
-                            }}
-                        >
-                            {products.map((product, index) => (
-                                <div
-                                    key={product._id}
-                                    style={getSliceStyle(products.length, index)}
-                                    className='absolute inset-0'
-                                >
-                                    <div
-                                        style={getTextStyle()}
-                                        className='truncate px-2'
-                                    >
-                                        <span className='truncate'>
-                                            {product.title}
-                                        </span>
-                                        <PriceTag
-                                            price={(product.price || 0) * 5}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div
-                            className={`
-                                absolute inset-0 flex items-center justify-center p-8
-                                transition-all duration-1000 ease-in-out transform
-                                ${!showWinningItem ? 'scale-0 opacity-0 translate-y-full' : 'scale-100 opacity-100 translate-y-0'}
-                            `}
-                        >
-                            {hasSpun && !isSpinning && (
-                                <WinningItem
-                                    product={products[winningIndex]}
-                                    onClose={() => setIsOpen(false)}
+                        <>
+                            <div 
+                                className={`
+                                    relative w-[350px] h-[350px] md:w-[600px] md:h-[600px] transition-all duration-1000 ease-in-out transform
+                                    ${showWinningItem ? 'scale-0 opacity-0 rotate-180' : 'scale-100 opacity-100'}
+                                `}
+                            >
+                                {/* Red pointer */}
+                                <div 
+                                    className={`
+                                        absolute top-1/2 right-0 -translate-y-1/2 translate-x-2 w-0 h-0
+                                        border-t-[20px] border-t-transparent
+                                        border-r-[40px] border-r-red-600
+                                        border-b-[20px] border-b-transparent
+                                        z-20
+                                    `}
                                 />
-                            )}
-                        </div>
 
-                        <button
-                            onClick={handleSpin}
-                            disabled={isSpinning || hasSpun}
-                            className={`
-                                relative px-8 py-4 rounded-full font-bold text-white text-lg transition-all
-                                bg-gradient-to-r from-emerald-500 to-blue-600
-                                border-2 border-emerald-400
-                                shadow-[0_0_20px_rgba(16,185,129,0.3)]
-                                hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]
-                                hover:scale-105
-                                disabled:opacity-50 disabled:cursor-not-allowed
-                                ${showWinningItem ? 'opacity-0 scale-0 -translate-y-full' : ''}
-                            `}
-                        >
-                            {isSpinning ? (
-                                <span className='inline-flex items-center gap-2'>
-                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Spinning...
-                                </span>
-                            ) : hasSpun ? (
-                                "🎉 Congratulations! 🎉"
-                            ) : (
-                                <>
-                                    <span className='animate-pulse'>🎁</span>
-                                    {" SPIN THE WHEEL "}
-                                    <span className='animate-pulse'>🎁</span>
-                                </>
-                            )}
-                        </button>
+                                {/* Wheel */}
+                                <div
+                                    className={`
+                                        absolute inset-0 rounded-full overflow-hidden border-8 border-gray-200
+                                        shadow-[0_0_20px_rgba(0,0,0, 0.2)]
+                                        ${!isSpinning && !hasSpun && 'animate-[float_3s_ease-in-out_infinite]'}
+                                    `}
+                                    style={{
+                                        ...wheelStyle,
+                                        animation: !isSpinning && !hasSpun ? 'spin 30s linear infinite' : undefined
+                                    }}
+                                >
+                                    {products.map((product, index) => (
+                                        <div
+                                            key={product._id}
+                                            style={getSliceStyle(products.length, index)}
+                                            className='absolute inset-0'
+                                        >
+                                            <div
+                                                style={getTextStyle()}
+                                                className='truncate px-2'
+                                            >
+                                                <span className='truncate'>
+                                                    {product.title}
+                                                </span>
+                                                <PriceTag
+                                                    price={(product.price || 0) * 5}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div
+                                className={`
+                                    absolute inset-0 flex items-center justify-center p-8
+                                    transition-all duration-1000 ease-in-out transform
+                                    ${!showWinningItem ? 'scale-0 opacity-0 translate-y-full' : 'scale-100 opacity-100 translate-y-0'}
+                                `}
+                            >
+                                {hasSpun && !isSpinning && (
+                                    <WinningItem
+                                        product={products[winningIndex]}
+                                        onClose={() => setIsOpen(false)}
+                                    />
+                                )}
+                            </div>
+
+                            <button
+                                onClick={handleSpin}
+                                disabled={isSpinning || hasSpun}
+                                className={`
+                                    relative px-8 py-4 rounded-full font-bold text-white text-lg transition-all
+                                    bg-gradient-to-r from-emerald-500 to-blue-600
+                                    border-2 border-emerald-400
+                                    shadow-[0_0_20px_rgba(16,185,129,0.3)]
+                                    hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]
+                                    hover:scale-105
+                                    disabled:opacity-50 disabled:cursor-not-allowed
+                                    ${showWinningItem ? 'opacity-0 scale-0 -translate-y-full' : ''}
+                                `}
+                            >
+                                {isSpinning ? (
+                                    <span className='inline-flex items-center gap-2'>
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Spinning...
+                                    </span>
+                                ) : hasSpun ? (
+                                    "🎉 Congratulations! 🎉"
+                                ) : (
+                                    <>
+                                        <span className='animate-pulse'>🎁</span>
+                                        {" SPIN THE WHEEL "}
+                                        <span className='animate-pulse'>🎁</span>
+                                    </>
+                                )}
+                            </button>
+                        </>
                     )}
                 </div>
             </DialogContent>
