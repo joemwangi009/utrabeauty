@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import { findCartById, deleteCart } from "@/lib/database";
 import { umamiTrackCheckoutSuccessEvent } from "@/lib/umami";
 import { createClient } from "next-sanity";
 import { headers } from "next/headers";
@@ -61,14 +61,7 @@ export async function POST(req: Request) {
                     throw new Error("No cart ID in session metadata");
                 }
 
-                const cart = await prisma.cart.findUnique({
-                    where: {
-                        id: cartId
-                    },
-                    include: {
-                        items: true,
-                    }
-                });
+                const cart = await findCartById(cartId);
 
                 if(!cart) {
                     throw new Error("Cart not found");
@@ -95,7 +88,7 @@ export async function POST(req: Request) {
                         postalCode: session.shipping_details?.address?.postal_code,
                         country: session.shipping_details?.address?.country,
                     },
-                    orderItems: cart.items.map((item) => ({
+                    orderItems: cart.items?.map((item: any) => ({
                         _type: 'orderItem',
                         _key: item.id,
                         product: {
@@ -104,7 +97,7 @@ export async function POST(req: Request) {
                         },
                         quantity: item.quantity,
                         price: item.price
-                    })),
+                    })) || [],
                     status: 'PROCESSING',
                 });
 
@@ -121,11 +114,7 @@ export async function POST(req: Request) {
                     console.log(e);
                 }
 
-                await prisma.cart.delete({
-                    where: {
-                        id: cartId
-                    }
-                });
+                await deleteCart(cartId);
                 break;
             }
 

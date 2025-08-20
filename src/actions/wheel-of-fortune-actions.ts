@@ -3,7 +3,7 @@
 import { Product } from "@/sanity.types";
 import { createClient } from "next-sanity";
 import { getCurrentSession } from "./auth";
-import prisma from "@/lib/prisma";
+import { createWheelOfFortuneSpin, findUserSpinsToday } from "@/lib/database";
 
 // Minimum purchase amount required to be eligible for wheel of fortune
 const MINIMUM_PURCHASE_AMOUNT = 300; // $300 USD
@@ -57,24 +57,16 @@ export const checkWheelOfFortuneEligibility = async () => {
         });
 
         // Query completed orders for this user
-        const userOrders = await client.fetch(`
-            *[_type == "order" && customerId == $userId && status == "COMPLETED"] {
-                totalPrice
-            }
-        `, { userId: user.id.toString() });
+        const userOrders = await client.fetch(`*[_type == "order" && customerId == $userId && status == "COMPLETED"] {
+            totalPrice
+        }`, { userId: user.id.toString() });
 
         // Calculate total spent
         const totalSpent = userOrders.reduce((total: number, order: any) => total + (order.totalPrice || 0), 0);
         
         // Check if user has already spun the wheel for their current eligibility
-        const hasSpunToday = await prisma.wheelOfFortuneSpin.findFirst({
-            where: {
-                userId: user.id,
-                createdAt: {
-                    gte: new Date(new Date().setHours(0, 0, 0, 0)) // Today
-                }
-            }
-        });
+        const userSpinsToday = await findUserSpinsToday(user.id);
+        const hasSpunToday = userSpinsToday.length > 0;
 
         const isEligible = totalSpent >= MINIMUM_PURCHASE_AMOUNT && !hasSpunToday;
         const remainingAmount = Math.max(0, MINIMUM_PURCHASE_AMOUNT - totalSpent);
@@ -112,13 +104,7 @@ export const recordWheelOfFortuneSpin = async () => {
 
     try {
         // Record the spin in the database
-        await prisma.wheelOfFortuneSpin.create({
-            data: {
-                userId: user.id,
-                spunAt: new Date(),
-            }
-        });
-
+        await createWheelOfFortuneSpin(user.id, new Date());
         return { success: true };
     } catch (error) {
         console.error("Error recording wheel of fortune spin:", error);

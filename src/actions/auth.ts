@@ -2,10 +2,17 @@
 import { encodeBase32LowerCaseNoPadding, encodeHexLowerCase } from "@oslojs/encoding";
 import { sha256 } from "@oslojs/crypto/sha2";
 
-import type { User, Session } from "@prisma/client";
-import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { cache } from "react";
+import { 
+  createUser, 
+  findUserByEmail, 
+  findUserById,
+  createSession as createSessionInDB, 
+  findSessionById, 
+  deleteSession,
+  deleteExpiredSessions
+} from "@/lib/database";
 
 export async function generateSessionToken(): Promise<string> {
 	const bytes = new Uint8Array(20);
@@ -14,68 +21,51 @@ export async function generateSessionToken(): Promise<string> {
 	return token;
 }
 
-export async function createSession(token: string, userId: number): Promise<Session> {
+export async function createSession(token: string, userId: number): Promise<any> {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	const session: Session = {
-		id: sessionId,
-		userId,
-		expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
-	};
-	await prisma.session.create({
-		data: session
-	});
+	const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+	
+	const session = await createSessionInDB(sessionId, userId, expiresAt);
 	return session;
 }
 
 export async function validateSessionToken(token: string): Promise<SessionValidationResult> {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	const result = await prisma.session.findUnique({
-		where: {
-			id: sessionId
-		},
-		include: {
-			user: true
-		}
-	});
-	if (result === null) {
+	const result = await findSessionById(sessionId);
+	
+	if (!result) {
 		return { session: null, user: null };
 	}
-	const { user, ...session } = result;
-	if (Date.now() >= session.expiresAt.getTime()) {
-		await prisma.session.delete({ where: { id: sessionId } });
+	
+	const { userId, expiresAt, ...session } = result;
+	
+	if (Date.now() >= new Date(expiresAt).getTime()) {
+		await deleteSession(sessionId);
 		return { session: null, user: null };
 	}
-	if (Date.now() >= session.expiresAt.getTime() - 1000 * 60 * 60 * 24 * 15) {
-		session.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-		await prisma.session.update({
-			where: {
-				id: session.id
-			},
-			data: {
-				expiresAt: session.expiresAt
-			}
-		});
+	
+	// Extend session if it's close to expiring
+	if (Date.now() >= new Date(expiresAt).getTime() - 1000 * 60 * 60 * 24 * 15) {
+		const newExpiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+		await createSessionInDB(sessionId, userId, newExpiresAt);
+		session.expiresAt = newExpiresAt;
 	}
 
     const safeUser = {
-        ...user,
-        passwordHash: undefined,
+        id: userId,
+        email: result.email,
     }
 
 	return { session, user: safeUser };
 }
 
 export async function invalidateSession(sessionId: string): Promise<void> {
-	await prisma.session.delete({ where: { id: sessionId } });
+	await deleteSession(sessionId);
 }
 
 export type SessionValidationResult =
-	| { session: Session; user: Omit<User, "passwordHash"> }
+	| { session: any; user: { id: number; email: string } }
 	| { session: null; user: null };
-
-
-
-
 
 /* Cookies */
 export async function setSessionTokenCookie(token: string, expiresAt: Date): Promise<void> {
@@ -110,7 +100,6 @@ export const getCurrentSession = cache(async (): Promise<SessionValidationResult
 	return result;
 });
 
-
 /* User register, login, logout */
 export const hashPassword = async (password: string) => {
     return encodeHexLowerCase(sha256(new TextEncoder().encode(password)));
@@ -124,16 +113,11 @@ export const verifyPassword = async (password: string, hash: string) => {
 export const registerUser = async (email: string, password: string) => {
     const passwordHash = await hashPassword(password);
     try {
-        const user = await prisma.user.create({
-            data: {
-                email,
-                passwordHash,
-            }
-        });
+        const user = await createUser(email, passwordHash);
 
         const safeUser = {
-            ...user,
-            passwordHash: undefined,
+            id: user.id,
+            email: user.email,
         };
 
         return {
@@ -149,11 +133,7 @@ export const registerUser = async (email: string, password: string) => {
 }
 
 export const loginUser = async (email: string, password: string) => {
-    const user = await prisma.user.findUnique({
-        where: {
-            email: email,
-        }
-    });
+    const user = await findUserByEmail(email);
 
     if(!user) {
         return {
@@ -175,8 +155,8 @@ export const loginUser = async (email: string, password: string) => {
     await setSessionTokenCookie(token, session.expiresAt);
 
     const safeUser = {
-        ...user,
-        passwordHash: undefined,
+        id: user.id,
+        email: user.email,
     };
 
     return {
