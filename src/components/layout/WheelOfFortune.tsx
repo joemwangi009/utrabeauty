@@ -284,7 +284,7 @@ const WheelOfFortune = ({ products, winningIndex }: WheelOfFortuneProps) => {
                             🎁 Exclusive Wheel of Fortune 🎁
                         </h2>
                         <p className='text-gray-600 mb-4 relative animate-pulse font-medium'>
-                            Congratulations! You've unlocked the exclusive wheel of fortune for loyal customers.
+                            Congratulations! You&apos;ve unlocked the exclusive wheel of fortune for loyal customers.
                         </p>
                         <div className='bg-emerald-100 border border-emerald-200 rounded-lg p-3 mb-4'>
                             <p className='text-sm text-emerald-800 font-medium'>
@@ -340,7 +340,7 @@ const WheelOfFortune = ({ products, winningIndex }: WheelOfFortuneProps) => {
                                     <p className='text-xs text-blue-600 mt-2'>
                                         {eligibility.remainingAmount > 0 
                                             ? `Spend $${eligibility.remainingAmount.toFixed(2)} more to unlock!`
-                                            : 'You\'re almost there!'
+                                            : 'You&apos;re almost there!'
                                         }
                                     </p>
                                 </div>

@@ -46,7 +46,7 @@ const AnalyticsTracker = ({user}: AnalyticsTrackerProps) => {
                 })
             }
         } catch(e) {}
-    }, [user])
+    }, [user]);
 
     return <></>
 }
