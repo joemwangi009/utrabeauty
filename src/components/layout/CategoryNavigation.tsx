@@ -144,7 +144,7 @@ const CategoryNavigation = () => {
                             className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium text-sm transition-colors"
                         >
                             <TrendingUp className="w-4 h-4" />
-                            Today's Deals
+                            Today&apos;s Deals
                         </Link>
                         
                         <Link
