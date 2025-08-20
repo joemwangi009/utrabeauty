@@ -10,7 +10,7 @@ type EligibilityStatus = {
     totalSpent: number;
     minimumRequired: number;
     remainingAmount: number;
-    hasSpunToday: boolean;
+    hasSpunToday?: boolean;
 };
 
 const WheelOfFortuneEligibilityBanner = () => {
@@ -59,7 +59,7 @@ const WheelOfFortuneEligibilityBanner = () => {
                         </div>
                     </div>
 
-                    {!eligibility.hasSpunToday && (
+                    {eligibility.hasSpunToday !== true && (
                         <div className="flex items-center gap-4">
                             <div className="hidden md:flex items-center gap-2 text-xs text-blue-700">
                                 <span>Progress:</span>
