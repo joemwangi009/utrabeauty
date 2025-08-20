@@ -128,7 +128,7 @@ const WinningItem = ({ product, onClose }: {product: Product, onClose: () => voi
                     🎉 Congratulations! 🎉
                 </h3>
                 <p className='text-gray-600 mb-4'>
-                    You've won this amazing product!
+                    You&apos;ve won this amazing product!
                 </p>
             </div>
 

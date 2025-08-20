@@ -30,7 +30,7 @@ const AnalyticsTracker = ({user}: AnalyticsTrackerProps) => {
                 })
             }
         } catch(e) {}
-    }, [cartId]);
+    }, [cartId, user]);
 
     useEffect(() => {
         if(!user) {
