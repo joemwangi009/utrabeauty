@@ -1,17 +1,25 @@
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { env } from './env';
 
 // Database connection pool configuration
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: env.DATABASE_URL,
   ssl: false, // Disable SSL for now since we know it works
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
   connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
 });
 
+// Add error handling to the pool
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+  process.exit(-1);
+});
+
 // Test database connection
 export const testConnection = async (): Promise<boolean> => {
   try {
+    console.log('Testing database connection with URL:', env.DATABASE_URL.substring(0, 50) + '...');
     const client = await pool.connect();
     const result = await client.query('SELECT NOW()');
     client.release();
@@ -19,6 +27,7 @@ export const testConnection = async (): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error('Database connection failed:', error);
+    console.error('Connection string (first 50 chars):', env.DATABASE_URL.substring(0, 50) + '...');
     return false;
   }
 };
