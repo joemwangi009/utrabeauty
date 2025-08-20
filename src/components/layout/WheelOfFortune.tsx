@@ -134,18 +134,24 @@ const WinningItem = ({ product, onClose }: {product: Product, onClose: () => voi
 
             <div className='bg-white rounded-lg shadow-lg p-6 mb-6'>
                 <div className='relative w-32 h-32 mx-auto mb-4'>
-                    <Image
-                        src={urlFor(product.image).url()}
-                        alt={product.title}
-                        fill
-                        className='object-cover rounded-lg'
-                    />
+                    {product.image ? (
+                        <Image
+                            src={urlFor(product.image).url()}
+                            alt={product.title || 'Winning Product'}
+                            fill
+                            className='object-cover rounded-lg'
+                        />
+                    ) : (
+                        <div className='w-full h-full bg-gray-200 rounded-lg flex items-center justify-center'>
+                            <Gift className='w-12 h-12 text-gray-400' />
+                        </div>
+                    )}
                 </div>
                 <h4 className='text-lg font-semibold text-gray-800 mb-2'>
-                    {product.title}
+                    {product.title || 'Amazing Product'}
                 </h4>
                 <p className='text-gray-600 mb-2'>
-                    {product.description}
+                    {product.description || 'Congratulations on your win!'}
                 </p>
                 <div className='text-2xl font-bold text-emerald-600'>
                     ${(product.price || 0).toFixed(2)}
