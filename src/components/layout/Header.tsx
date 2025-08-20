@@ -1,7 +1,5 @@
 'use client';
 import { logoutUser } from '@/actions/auth';
-import CategoryNavigation from '@/components/layout/CategoryNavigation';
-import ProfessionalSearchBar from '@/components/layout/ProfessionalSearchBar';
 import { useCartStore } from '@/stores/cart-store';
 import { User } from '@prisma/client';
 import Link from 'next/link';
@@ -85,7 +83,19 @@ const Header = ({ user, categorySelector }: HeaderProps) => {
                         </Link>
 
                         <div className='flex flex-1 justify-end items-center gap-2 sm:gap-4'>
-                            <ProfessionalSearchBar />
+                            {/* Simple Search Bar */}
+                            <div className='flex items-center bg-white border border-gray-300 rounded-lg px-3 py-2 mr-4'>
+                                <input
+                                    type='text'
+                                    placeholder='Search products...'
+                                    className='w-64 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent'
+                                />
+                                <button className='ml-2 p-1 hover:bg-gray-100 rounded'>
+                                    <svg className='w-4 h-4 text-gray-500' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' />
+                                    </svg>
+                                </button>
+                            </div>
 
                             {user ? (
                                 <div className='flex items-center gap-2 sm:gap-4'>
@@ -125,9 +135,6 @@ const Header = ({ user, categorySelector }: HeaderProps) => {
                     </div>
                 </div>
             </div>
-            
-            {/* Category Navigation */}
-            <CategoryNavigation />
         </header>
     );
 };

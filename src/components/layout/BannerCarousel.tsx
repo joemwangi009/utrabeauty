@@ -9,6 +9,7 @@ interface BannerSlide {
     subtitle: string;
     description: string;
     image: string;
+    video?: string;
     ctaText: string;
     ctaLink: string;
     backgroundColor: string;
@@ -21,7 +22,7 @@ const bannerSlides: BannerSlide[] = [
         title: 'Beauty Essentials Under $50',
         subtitle: 'Premium Quality, Affordable Prices',
         description: 'Discover our curated collection of beauty must-haves that won\'t break the bank',
-        image: '/images/banner-1.jpg',
+        image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2000&q=80',
         ctaText: 'Shop Now',
         ctaLink: '/#products',
         backgroundColor: 'bg-gradient-to-r from-pink-100 to-purple-100',
@@ -32,7 +33,7 @@ const bannerSlides: BannerSlide[] = [
         title: 'New Arrivals - Limited Time',
         subtitle: 'Fresh Beauty Products',
         description: 'Be the first to try our latest beauty innovations and trending products',
-        image: '/images/banner-2.jpg',
+        image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2000&q=80',
         ctaText: 'Explore New',
         ctaLink: '/#products',
         backgroundColor: 'bg-gradient-to-r from-blue-100 to-indigo-100',
@@ -43,7 +44,8 @@ const bannerSlides: BannerSlide[] = [
         title: 'VIP Beauty Club',
         subtitle: 'Exclusive Member Benefits',
         description: 'Join our beauty community and unlock special discounts, early access, and exclusive offers',
-        image: '/images/banner-3.jpg',
+        image: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2000&q=80',
+        video: 'https://player.vimeo.com/video/328217769?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1',
         ctaText: 'Join Now',
         ctaLink: '/auth/sign-in',
         backgroundColor: 'bg-gradient-to-r from-emerald-100 to-teal-100',
@@ -54,7 +56,7 @@ const bannerSlides: BannerSlide[] = [
         title: 'Free Shipping on Orders $50+',
         subtitle: 'Shop More, Save More',
         description: 'Enjoy free shipping on all orders over $50 and discover amazing beauty deals',
-        image: '/images/banner-4.jpg',
+        image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2000&q=80',
         ctaText: 'Start Shopping',
         ctaLink: '/#products',
         backgroundColor: 'bg-gradient-to-r from-yellow-100 to-orange-100',
@@ -110,38 +112,46 @@ const BannerCarousel = () => {
                                 : 'opacity-0 translate-x-full'
                         }`}
                     >
-                        <div className={`w-full h-full ${slide.backgroundColor} flex items-center`}>
-                            <div className="container mx-auto px-4 md:px-8">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center h-full">
-                                    {/* Content */}
-                                    <div className={`text-center md:text-left ${slide.textColor}`}>
-                                        <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
-                                            {slide.title}
-                                        </h2>
-                                        <h3 className="text-xl md:text-2xl font-semibold mb-3 text-gray-600">
-                                            {slide.subtitle}
-                                        </h3>
-                                        <p className="text-lg md:text-xl mb-8 text-gray-700 max-w-md">
-                                            {slide.description}
-                                        </p>
-                                        <button
-                                            onClick={() => window.location.href = slide.ctaLink}
-                                            className="bg-black hover:bg-gray-800 text-white font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
-                                        >
-                                            {slide.ctaText}
-                                        </button>
-                                    </div>
-                                    
-                                    {/* Image Placeholder */}
-                                    <div className="hidden md:flex justify-center">
-                                        <div className="w-80 h-80 bg-white/20 rounded-2xl flex items-center justify-center border-2 border-white/30 shadow-xl">
-                                            <div className="text-center text-gray-600">
-                                                <div className="w-24 h-24 bg-gray-300 rounded-full mx-auto mb-4 flex items-center justify-center">
-                                                    <span className="text-2xl">🎨</span>
-                                                </div>
-                                                <p className="text-sm">Banner Image</p>
-                                                <p className="text-xs text-gray-500">Professional Design</p>
-                                            </div>
+                        <div className="relative w-full h-full">
+                            {/* Background Image/Video */}
+                            {slide.video ? (
+                                <iframe
+                                    src={slide.video}
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    frameBorder="0"
+                                    allow="autoplay; fullscreen; picture-in-picture"
+                                    allowFullScreen
+                                />
+                            ) : (
+                                <div 
+                                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                                    style={{ backgroundImage: `url(${slide.image})` }}
+                                />
+                            )}
+                            
+                            {/* Overlay for better text readability */}
+                            <div className="absolute inset-0 bg-black/30" />
+                            
+                            {/* Content */}
+                            <div className="relative z-10 flex items-center h-full">
+                                <div className="container mx-auto px-4 md:px-8">
+                                    <div className="max-w-2xl">
+                                        <div className={`text-white ${slide.textColor === 'text-gray-800' ? 'text-white' : slide.textColor}`}>
+                                            <h2 className="text-4xl md:text-6xl font-bold mb-6 leading-tight drop-shadow-lg">
+                                                {slide.title}
+                                            </h2>
+                                            <h3 className="text-xl md:text-3xl font-semibold mb-4 text-white/90 drop-shadow-lg">
+                                                {slide.subtitle}
+                                            </h3>
+                                            <p className="text-lg md:text-xl mb-8 text-white/80 max-w-lg leading-relaxed drop-shadow-lg">
+                                                {slide.description}
+                                            </p>
+                                            <button
+                                                onClick={() => window.location.href = slide.ctaLink}
+                                                className="bg-white hover:bg-gray-100 text-black font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl"
+                                            >
+                                                {slide.ctaText}
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
