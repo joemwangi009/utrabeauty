@@ -1,26 +1,26 @@
-import { findCartById, deleteCart } from "@/lib/database";
+import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
+import { env } from '@/lib/env';
+import { findCartById, deleteCart } from '@/lib/database';
 import { umamiTrackCheckoutSuccessEvent } from "@/lib/umami";
 import { createClient } from "next-sanity";
-import { headers } from "next/headers";
-import { NextResponse } from "next/server";
-import Stripe from "stripe";
+
+const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+    apiVersion: '2025-02-24.acacia'
+});
+
+const webhookSecret = env.STRIPE_WEBHOOK_SECRET;
+
+// Get sanity client
+const sanityClient = createClient({
+    projectId: env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+    dataset: env.NEXT_PUBLIC_SANITY_DATASET,
+    apiVersion: env.NEXT_PUBLIC_SANITY_API_VERSION,
+    token: env.SANITY_API_WRITE_TOKEN,
+});
 
 export async function POST(req: Request) {
-    // Get Stripe client
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2025-02-24.acacia'
-    });
-
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-
-    // Get sanity client
-    const sanityClient = createClient({
-        projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-        dataset: process.env.NEXT_PUBLIC_SANITY_DATASET,
-        apiVersion: process.env.NEXT_PUBLIC_SANITY_API_VERSION,
-        token: process.env.SANITY_API_WRITE_TOKEN,
-    });
-
     try {
         const body = await req.text();
         const headerList = await headers();

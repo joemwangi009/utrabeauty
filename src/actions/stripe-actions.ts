@@ -2,9 +2,10 @@
 
 import { getCurrentSession } from '@/actions/auth';
 import { getOrCreateCart } from '@/actions/cart-actions';
+import { env } from '@/lib/env';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: '2025-02-24.acacia'
 });
 
@@ -20,6 +21,13 @@ export const createCheckoutSession = async (cartId: string) => {
 
     console.log(cart.items.map((item: any) => item.title))
 
+    // Ensure we have a valid base URL with proper scheme
+    const baseUrl = env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    
+    // Validate and format URLs
+    const successUrl = new URL('/checkout/success?session_id={CHECKOUT_SESSION_ID}', baseUrl).toString();
+    const cancelUrl = new URL('/', baseUrl).toString();
+
     const session = await stripe.checkout.sessions.create({
         mode: 'payment',
         line_items: cart.items.map((item: any) => ({
@@ -33,8 +41,8 @@ export const createCheckoutSession = async (cartId: string) => {
             },
             quantity: item.quantity,
         })),
-        success_url: `${process.env.NEXT_PUBLIC_BASE_URL!}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL!}`,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
         customer_email: user?.email,
         metadata: {
             cartId: cart.id,

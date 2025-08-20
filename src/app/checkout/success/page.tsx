@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
+import { env } from '@/lib/env';
+
+const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+    apiVersion: '2025-02-24.acacia'
+});
 
 const getCheckoutSession = async (sessionId: string) => {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2025-02-24.acacia',
-    });
-
     return stripe.checkout.sessions.retrieve(sessionId);
 }
 
