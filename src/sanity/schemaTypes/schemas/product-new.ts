@@ -1,57 +1,10 @@
 import { defineField, defineType } from 'sanity';
-import { ProductDiscovery } from '../../components/ProductDiscovery';
 
 export const product = defineType({
     name: 'product',
     title: 'Product',
     type: 'document',
     fields: [
-        defineField({
-            name: 'productDiscovery',
-            title: 'Discover Alibaba Products',
-            type: 'object',
-            components: {
-                input: ProductDiscovery
-            },
-            options: {
-                collapsible: true,
-                collapsed: false
-            },
-            fields: [
-                {
-                    name: 'searchQuery',
-                    title: 'Search Query',
-                    type: 'string',
-                    description: 'Enter search terms to find products on Alibaba'
-                },
-                {
-                    name: 'selectedProduct',
-                    title: 'Selected Product',
-                    type: 'object',
-                    fields: [
-                        {
-                            name: 'title',
-                            title: 'Product Title',
-                            type: 'string',
-                            readOnly: true
-                        },
-                        {
-                            name: 'url',
-                            title: 'Product URL',
-                            type: 'url',
-                            readOnly: true
-                        },
-                        {
-                            name: 'price',
-                            title: 'Product Price',
-                            type: 'string',
-                            readOnly: true
-                        }
-                    ]
-                }
-            ],
-            description: 'Search and browse Alibaba products to auto-fill this form'
-        }),
         defineField({
             name: 'title',
             title: 'Title',
@@ -118,15 +71,6 @@ export const product = defineType({
             validation: (Rule) => Rule.required()
         }),
         defineField({
-            name: 'tags',
-            title: 'Tags',
-            type: 'array',
-            of: [{ type: 'string' }],
-            options: {
-                layout: 'tags'
-            }
-        }),
-        defineField({
             name: 'stock',
             title: 'Stock',
             type: 'number',
@@ -151,39 +95,6 @@ export const product = defineType({
             title: 'Updated At',
             type: 'datetime',
             readOnly: true
-        }),
-        defineField({
-            name: 'importMetadata',
-            title: 'Import Metadata',
-            type: 'object',
-            fields: [
-                {
-                    name: 'importedFrom',
-                    title: 'Imported From',
-                    type: 'string',
-                    options: {
-                        list: [
-                            { title: 'Alibaba', value: 'alibaba' },
-                            { title: 'AliExpress', value: 'aliexpress' },
-                            { title: 'Manual', value: 'manual' }
-                        ]
-                    }
-                },
-                {
-                    name: 'importedAt',
-                    title: 'Imported At',
-                    type: 'datetime'
-                },
-                {
-                    name: 'originalUrl',
-                    title: 'Original URL',
-                    type: 'url'
-                }
-            ],
-            options: {
-                collapsible: true,
-                collapsed: true
-            }
         })
     ],
     preview: {

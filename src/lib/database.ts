@@ -306,6 +306,228 @@ export const findUserSpinsToday = async (userId: number) => {
   return result.rows;
 };
 
+// ===== ORDER MANAGEMENT FUNCTIONS =====
+
+export interface OrderItem {
+  id?: number;
+  orderId: number;
+  sanityProductId: string;
+  productTitle: string;
+  productPrice: number;
+  productImage?: string;
+  supplierUrl?: string;
+  supplierName?: string;
+  importedFromAlibaba?: boolean;
+  quantity: number;
+  lineTotal: number;
+}
+
+export interface ShippingAddress {
+  id?: number;
+  orderId: number;
+  name: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
+export interface Order {
+  id?: number;
+  orderNumber: string;
+  orderDate?: Date;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  stripeCustomerId?: string;
+  stripeCheckoutSessionId?: string;
+  stripePaymentIntentId?: string;
+  totalPrice: number;
+  status?: 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface OrderWithDetails extends Order {
+  orderItems: OrderItem[];
+  shippingAddress?: ShippingAddress;
+}
+
+export const createOrder = async (orderData: Order): Promise<Order> => {
+  const query = `
+    INSERT INTO "Order" (
+      "orderNumber", "orderDate", "customerId", "customerName", "customerEmail",
+      "stripeCustomerId", "stripeCheckoutSessionId", "stripePaymentIntentId",
+      "totalPrice", "status"
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    RETURNING *
+  `;
+  
+  const params = [
+    orderData.orderNumber,
+    orderData.orderDate || new Date(),
+    orderData.customerId,
+    orderData.customerName,
+    orderData.customerEmail,
+    orderData.stripeCustomerId,
+    orderData.stripeCheckoutSessionId,
+    orderData.stripePaymentIntentId,
+    orderData.totalPrice,
+    orderData.status || 'PROCESSING'
+  ];
+  
+  const result = await executeQuery(query, params);
+  return result.rows[0];
+};
+
+export const createOrderItem = async (orderItem: OrderItem): Promise<OrderItem> => {
+  const query = `
+    INSERT INTO "OrderItem" (
+      "orderId", "sanityProductId", "productTitle", "productPrice", "productImage",
+      "supplierUrl", "supplierName", "importedFromAlibaba", "quantity", "lineTotal"
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    RETURNING *
+  `;
+  
+  const params = [
+    orderItem.orderId,
+    orderItem.sanityProductId,
+    orderItem.productTitle,
+    orderItem.productPrice,
+    orderItem.productImage,
+    orderItem.supplierUrl,
+    orderItem.supplierName,
+    orderItem.importedFromAlibaba || false,
+    orderItem.quantity,
+    orderItem.lineTotal
+  ];
+  
+  const result = await executeQuery(query, params);
+  return result.rows[0];
+};
+
+export const createShippingAddress = async (address: ShippingAddress): Promise<ShippingAddress> => {
+  const query = `
+    INSERT INTO "ShippingAddress" (
+      "orderId", "name", "line1", "line2", "city", "state", "postalCode", "country"
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING *
+  `;
+  
+  const params = [
+    address.orderId,
+    address.name,
+    address.line1,
+    address.line2,
+    address.city,
+    address.state,
+    address.postalCode,
+    address.country
+  ];
+  
+  const result = await executeQuery(query, params);
+  return result.rows[0];
+};
+
+export const getOrderById = async (orderId: number): Promise<OrderWithDetails | null> => {
+  // Get order details
+  const orderQuery = `SELECT * FROM "Order" WHERE id = $1`;
+  const orderResult = await executeQuery(orderQuery, [orderId]);
+  
+  if (orderResult.rows.length === 0) {
+    return null;
+  }
+  
+  const order = orderResult.rows[0];
+  
+  // Get order items
+  const itemsQuery = `SELECT * FROM "OrderItem" WHERE "orderId" = $1 ORDER BY id`;
+  const itemsResult = await executeQuery(itemsQuery, [orderId]);
+  
+  // Get shipping address
+  const addressQuery = `SELECT * FROM "ShippingAddress" WHERE "orderId" = $1 LIMIT 1`;
+  const addressResult = await executeQuery(addressQuery, [orderId]);
+  
+  return {
+    ...order,
+    orderItems: itemsResult.rows,
+    shippingAddress: addressResult.rows[0] || undefined
+  };
+};
+
+export const getOrderByOrderNumber = async (orderNumber: string): Promise<OrderWithDetails | null> => {
+  const orderQuery = `SELECT * FROM "Order" WHERE "orderNumber" = $1`;
+  const orderResult = await executeQuery(orderQuery, [orderNumber]);
+  
+  if (orderResult.rows.length === 0) {
+    return null;
+  }
+  
+  const order = orderResult.rows[0];
+  return getOrderById(order.id);
+};
+
+export const getOrdersByCustomerId = async (customerId: string): Promise<Order[]> => {
+  const query = `
+    SELECT * FROM "Order" 
+    WHERE "customerId" = $1 
+    ORDER BY "orderDate" DESC
+  `;
+  const result = await executeQuery(query, [customerId]);
+  return result.rows;
+};
+
+export const getAllOrders = async (limit: number = 50, offset: number = 0): Promise<Order[]> => {
+  const query = `
+    SELECT * FROM "Order" 
+    ORDER BY "orderDate" DESC 
+    LIMIT $1 OFFSET $2
+  `;
+  const result = await executeQuery(query, [limit, offset]);
+  return result.rows;
+};
+
+export const updateOrderStatus = async (orderId: number, status: string): Promise<Order> => {
+  const query = `
+    UPDATE "Order" 
+    SET "status" = $1, "updatedAt" = NOW() 
+    WHERE id = $2 
+    RETURNING *
+  `;
+  const result = await executeQuery(query, [status, orderId]);
+  return result.rows[0];
+};
+
+export const getOrdersWithSupplierInfo = async (limit: number = 50, offset: number = 0): Promise<any[]> => {
+  const query = `
+    SELECT 
+      o.*,
+      oi."supplierUrl",
+      oi."supplierName",
+      oi."importedFromAlibaba",
+      oi."productTitle",
+      oi."productImage"
+    FROM "Order" o
+    LEFT JOIN "OrderItem" oi ON o.id = oi."orderId"
+    ORDER BY o."orderDate" DESC 
+    LIMIT $1 OFFSET $2
+  `;
+  const result = await executeQuery(query, [limit, offset]);
+  return result.rows;
+};
+
+export const getOrderSupplierUrls = async (orderId: number): Promise<string[]> => {
+  const query = `
+    SELECT DISTINCT "supplierUrl" 
+    FROM "OrderItem" 
+    WHERE "orderId" = $1 AND "supplierUrl" IS NOT NULL
+  `;
+  const result = await executeQuery(query, [orderId]);
+  return result.rows.map(row => row.supplierUrl).filter(Boolean);
+};
+
 // ===== UTILITY FUNCTIONS =====
 
 export const getDatabaseStats = async () => {

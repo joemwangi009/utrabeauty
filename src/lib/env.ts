@@ -20,10 +20,10 @@ const envSchema = z.object({
   NEXT_PUBLIC_BASE_URL: z.string().url().optional(),
   
   // Analytics
-  UMAMI_WEBSITE_ID: z.string().optional(),
+  UMAMI_WEBSITE_ID: z.string().min(1),
   
   // Node environment
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']),
 });
 
 // Function to load environment variables with fallbacks
@@ -32,7 +32,7 @@ function loadEnv() {
   if (typeof process === 'undefined' || !process.env) {
     console.warn('Environment not available, using fallbacks');
     return {
-      DATABASE_URL: 'postgresql://placeholder',
+      DATABASE_URL: 'postgresql://postgres.qctfxjxbuvjlyylifaih:pass1234@aws-1-us-east-2.pooler.supabase.com:6543/postgres',
       NEXT_PUBLIC_SANITY_PROJECT_ID: 'i10ney18',
       NEXT_PUBLIC_SANITY_DATASET: 'production',
       NEXT_PUBLIC_SANITY_API_VERSION: '2024-12-06',
