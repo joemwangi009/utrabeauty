@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 
+/**
+ * Alibaba Product Discovery API
+ * 
+ * IMPORTANT: This API has two modes:
+ * 1. LOCAL DEVELOPMENT: Uses Puppeteer for real Alibaba scraping
+ * 2. VERCEL DEPLOYMENT: Uses mock data (Puppeteer cannot run in serverless)
+ * 
+ * For production scraping, consider:
+ * - Using a headless browser service (Browserless, Puppeteer-cluster)
+ * - Running scraping on a dedicated server
+ * - Using Alibaba's official API if available
+ */
+
 interface DiscoveredProduct {
   id: string;
   title: string;
@@ -28,6 +41,66 @@ interface SearchFilters {
   sortBy?: 'price' | 'relevance' | 'newest';
 }
 
+// Mock data for Vercel deployment (when Puppeteer can't run)
+const getMockProducts = (query: string): DiscoveredProduct[] => {
+  return [
+    {
+      id: 'mock-1',
+      title: `Mock ${query} Product 1`,
+      description: `This is a mock product for ${query} to demonstrate the interface when running on Vercel. Puppeteer cannot run in serverless environments.`,
+      price: '$29.99',
+      images: ['https://via.placeholder.com/300x300?text=Mock+Product+1'],
+      url: 'https://example.com/mock-product-1',
+      supplierName: 'Mock Supplier',
+      scrapedAt: new Date().toISOString(),
+      minOrderQuantity: '1',
+      material: 'Mock Material',
+      color: 'Mock Color',
+      size: 'Mock Size',
+      brand: 'Mock Brand',
+      warranty: '1 Year',
+      shippingInfo: 'Free Shipping',
+      productSpecs: {
+        'Product Type': `Mock ${query}`,
+        'Supplier': 'Mock Supplier',
+        'Price Range': '$29.99',
+        'Min Order': '1',
+        'Material': 'Mock Material',
+        'Color': 'Mock Color',
+        'Size': 'Mock Size',
+        'Brand': 'Mock Brand'
+      }
+    },
+    {
+      id: 'mock-2',
+      title: `Mock ${query} Product 2`,
+      description: `Another mock product for ${query} to show the interface functionality. This demonstrates the auto-filling capabilities.`,
+      price: '$49.99',
+      images: ['https://via.placeholder.com/300x300?text=Mock+Product+2'],
+      url: 'https://example.com/mock-product-2',
+      supplierName: 'Mock Supplier 2',
+      scrapedAt: new Date().toISOString(),
+      minOrderQuantity: '5',
+      material: 'Premium Mock Material',
+      color: 'Premium Mock Color',
+      size: 'Premium Mock Size',
+      brand: 'Premium Mock Brand',
+      warranty: '2 Years',
+      shippingInfo: 'Express Shipping',
+      productSpecs: {
+        'Product Type': `Premium Mock ${query}`,
+        'Supplier': 'Mock Supplier 2',
+        'Price Range': '$49.99',
+        'Min Order': '5',
+        'Material': 'Premium Mock Material',
+        'Color': 'Premium Mock Color',
+        'Size': 'Premium Mock Size',
+        'Brand': 'Premium Mock Brand'
+      }
+    }
+  ];
+};
+
 export async function POST(request: NextRequest) {
   let query: string = '';
   let filters: SearchFilters = {};
@@ -42,6 +115,26 @@ export async function POST(request: NextRequest) {
         { error: 'Search query is required' },
         { status: 400 }
       );
+    }
+
+    // Check if we're running on Vercel (serverless environment)
+    const isVercel = process.env.VERCEL === '1';
+    
+    if (isVercel) {
+      console.log(`🔍 Running on Vercel - Using mock data for: "${query}"`);
+      
+      const mockProducts = getMockProducts(query);
+      
+      return NextResponse.json({
+        success: true,
+        products: mockProducts,
+        totalFound: mockProducts.length,
+        searchQuery: query,
+        filters,
+        timestamp: new Date().toISOString(),
+        note: `MOCK DATA - Running on Vercel (Puppeteer not supported in serverless). For real scraping, run locally or use a headless browser service.`,
+        vercel: true
+      });
     }
 
     console.log(`🔍 Starting REAL Alibaba scraping for: "${query}"`);
@@ -485,6 +578,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ REAL Alibaba scraping error:', error);
     
+    // Check if this is a Vercel environment
+    const isVercel = process.env.VERCEL === '1';
+    const vercelNote = isVercel ? 'Note: Puppeteer cannot run on Vercel (serverless). Use mock data or run locally for real scraping.' : '';
+    
     return NextResponse.json(
       { 
         success: false,
@@ -492,12 +589,15 @@ export async function POST(request: NextRequest) {
         details: error instanceof Error ? error.message : 'Unknown error',
         searchQuery: query || 'unknown',
         timestamp: new Date().toISOString(),
+        vercel: isVercel,
+        vercelNote,
         suggestions: [
           'Try again later',
           'Check your internet connection',
           'The website may be temporarily unavailable',
           'Try a different search query',
-          'Alibaba may be blocking automated access'
+          'Alibaba may be blocking automated access',
+          ...(isVercel ? ['Use mock data for testing', 'Run locally for real scraping'] : [])
         ]
       },
       { status: 500 }
