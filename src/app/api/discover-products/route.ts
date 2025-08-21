@@ -5,13 +5,10 @@ import puppeteer from 'puppeteer';
  * Alibaba Product Discovery API
  * 
  * IMPORTANT: This API has two modes:
- * 1. LOCAL DEVELOPMENT: Uses Puppeteer for real Alibaba scraping
- * 2. VERCEL DEPLOYMENT: Uses mock data (Puppeteer cannot run in serverless)
+ * 1. LOCAL DEVELOPMENT: Uses local Puppeteer for real Alibaba scraping
+ * 2. VERCEL DEPLOYMENT: Uses Browserless.io service for real Alibaba scraping
  * 
- * For production scraping, consider:
- * - Using a headless browser service (Browserless, Puppeteer-cluster)
- * - Running scraping on a dedicated server
- * - Using Alibaba's official API if available
+ * Both modes provide REAL product data - no mock data!
  */
 
 interface DiscoveredProduct {
@@ -59,53 +56,68 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔍 Starting REAL Alibaba scraping for: "${query}"`);
 
-    // Launch browser with advanced stealth settings
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor',
-        '--disable-blink-features=AutomationControlled',
-        '--disable-extensions',
-        '--disable-plugins',
-        '--disable-default-apps',
-        '--disable-sync',
-        '--disable-translate',
-        '--hide-scrollbars',
-        '--mute-audio',
-        '--no-default-browser-check',
-        '--no-pings',
-        '--single-process',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection',
-        '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        '--window-size=1920,1080',
-        '--start-maximized',
-        '--disable-background-networking',
-        '--disable-default-apps',
-        '--disable-sync',
-        '--metrics-recording-only',
-        '--no-first-run',
-        '--safebrowsing-disable-auto-update',
-        '--disable-component-extensions-with-background-pages',
-        '--disable-ipc-flooding-protection',
-        '--disable-client-side-phishing-detection',
-        '--disable-hang-monitor',
-        '--disable-prompt-on-repost',
-        '--disable-domain-reliability',
-        '--disable-features=VizDisplayCompositor'
-      ]
-    });
+    // Check if we're running on Vercel (serverless environment)
+    const isVercel = process.env.VERCEL === '1';
+    
+    let browser;
+    
+    if (isVercel) {
+      // Use Browserless.io service for Vercel deployment
+      const browserlessUrl = process.env.BROWSERLESS_URL || 'https://chrome.browserless.io';
+      console.log(`🌐 Using Browserless service: ${browserlessUrl}`);
+      
+      browser = await puppeteer.connect({
+        browserWSEndpoint: `${browserlessUrl}?token=${process.env.BROWSERLESS_TOKEN || ''}`,
+      });
+    } else {
+      // Use local Puppeteer for development
+      console.log(`🌐 Using local Puppeteer`);
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+          '--disable-blink-features=AutomationControlled',
+          '--disable-extensions',
+          '--disable-plugins',
+          '--disable-default-apps',
+          '--disable-sync',
+          '--hide-scrollbars',
+          '--mute-audio',
+          '--no-default-browser-check',
+          '--no-pings',
+          '--single-process',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+          '--disable-features=TranslateUI',
+          '--disable-ipc-flooding-protection',
+          '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          '--window-size=1920,1080',
+          '--start-maximized',
+          '--disable-background-networking',
+          '--disable-default-apps',
+          '--disable-sync',
+          '--metrics-recording-only',
+          '--no-first-run',
+          '--safebrowsing-disable-auto-update',
+          '--disable-component-extensions-with-background-pages',
+          '--disable-ipc-flooding-protection',
+          '--disable-client-side-phishing-detection',
+          '--disable-hang-monitor',
+          '--disable-prompt-on-repost',
+          '--disable-domain-reliability',
+          '--disable-features=VizDisplayCompositor'
+        ]
+      });
+    }
 
     const page = await browser.newPage();
 
@@ -463,7 +475,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    await browser.close();
+    // Close browser properly based on connection type
+    if (isVercel) {
+      await browser.disconnect(); // For Browserless connection
+    } else {
+      await browser.close(); // For local Puppeteer
+    }
 
     console.log(`✅ REAL Alibaba scraping completed. Found ${products.length} REAL products`);
 
