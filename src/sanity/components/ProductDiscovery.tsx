@@ -49,6 +49,7 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
   const [autoFillSuccess, setAutoFillSuccess] = useState(false);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [autoFillProgress, setAutoFillProgress] = useState<string[]>([]);
+  const [success, setSuccess] = useState<string | null>(null);
 
   // Function to create a patch for a specific field
   const createFieldPatch = (fieldPath: string[], value: any) => {
@@ -116,227 +117,48 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
     setAutoFillProgress([]);
     
     try {
-      console.log('🚀 Starting auto-fill process for:', product.title);
-      console.log('🔧 Current form value:', value);
+      console.log('🚀 Starting direct product creation for:', product.title);
+      setAutoFillProgress(prev => [...prev, `🚀 Creating product: ${product.title.substring(0, 30)}...`]);
       
-      // Auto-fill the product form with ALL fields using patches
-      const patches = [];
-      let fieldCount = 0;
+      // Call the API to directly create the product
+      const response = await fetch('/api/products/create-from-alibaba', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          product: product,
+          categoryId: 'default-category' // You can make this selectable
+        }),
+      });
 
-      // Set title
-      patches.push(createFieldPatch(['title'], product.title));
-      fieldCount++;
-      setAutoFillProgress(prev => [...prev, `✅ Title: ${product.title.substring(0, 30)}...`]);
-      console.log('🔧 Created title patch:', product.title);
-      
-      // Set description with enhanced details
-      let enhancedDescription = product.description;
-      
-      // Add additional product details to description if available
-      const additionalDetails = [];
-      if (product.material) additionalDetails.push(`Material: ${product.material}`);
-      if (product.color) additionalDetails.push(`Color: ${product.color}`);
-      if (product.size) additionalDetails.push(`Size: ${product.size}`);
-      if (product.brand) additionalDetails.push(`Brand: ${product.brand}`);
-      if (product.warranty) additionalDetails.push(`Warranty: ${product.warranty}`);
-      if (product.shippingInfo) additionalDetails.push(`Shipping: ${product.shippingInfo}`);
-      if (product.minOrderQuantity) additionalDetails.push(`Min Order: ${product.minOrderQuantity}`);
-      
-      if (additionalDetails.length > 0) {
-        enhancedDescription += `\n\nProduct Specifications:\n${additionalDetails.join('\n')}`;
-      }
-      
-      patches.push(createFieldPatch(['description'], enhancedDescription));
-      fieldCount++;
-      setAutoFillProgress(prev => [...prev, `✅ Description: Enhanced with ${additionalDetails.length} specifications`]);
-      console.log('🔧 Created description patch:', enhancedDescription);
-      
-      // Set price (convert to number)
-      const price = parseFloat(product.price.replace(/[^\d.,]/g, '')) || 0;
-      patches.push(createFieldPatch(['price'], price));
-      fieldCount++;
-      setAutoFillProgress(prev => [...prev, `✅ Price: $${price}`]);
-      console.log('🔧 Created price patch:', price);
-      
-      // Set supplier URL
-      patches.push(createFieldPatch(['supplierUrl'], product.url));
-      fieldCount++;
-      setAutoFillProgress(prev => [...prev, `✅ Supplier URL: ${product.url.includes('aliexpress') ? 'AliExpress' : 'Alibaba'}`]);
-      console.log('🔧 Created supplierUrl patch:', product.url);
-      
-      // Set supplier name
-      patches.push(createFieldPatch(['supplierName'], product.supplierName));
-      fieldCount++;
-      setAutoFillProgress(prev => [...prev, `✅ Supplier: ${product.supplierName}`]);
-      console.log('🔧 Created supplierName patch:', product.supplierName);
-      
-      // Set importedFromAlibaba to true
-      patches.push(createFieldPatch(['importedFromAlibaba'], true));
-      fieldCount++;
-      setAutoFillProgress(prev => [...prev, `✅ Import Flag: Set to true`]);
-      console.log('🔧 Created importFlag patch:', true);
-      
-      // Set stock (default to 100 for imported products)
-      patches.push(createFieldPatch(['stock'], 100));
-      fieldCount++;
-      setAutoFillProgress(prev => [...prev, `✅ Stock: Set to 100 (default)`]);
-      console.log('🔧 Created stock patch:', 100);
-      
-      // Set isActive to true
-      patches.push(createFieldPatch(['isActive'], true));
-      fieldCount++;
-      setAutoFillProgress(prev => [...prev, `✅ Active Status: Set to true`]);
-      console.log('🔧 Created active patch:', true);
-      
-      // Generate and set slug from title
-      const slug = product.title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .substring(0, 96);
-      
-      patches.push(createFieldPatch(['slug'], {
-        _type: 'slug',
-        current: slug
-      }));
-      fieldCount++;
-      setAutoFillProgress(prev => [...prev, `✅ Slug: Generated "${slug}"`]);
-      console.log('🔧 Created slug patch:', slug);
-      
-      // Set tags based on product description, title, and specifications
-      const tags = [];
-      const text = `${product.title} ${product.description}`.toLowerCase();
-      
-      // Common product tags
-      if (text.includes('wireless') || text.includes('bluetooth')) tags.push('wireless');
-      if (text.includes('waterproof') || text.includes('water-resistant')) tags.push('waterproof');
-      if (text.includes('portable') || text.includes('travel')) tags.push('portable');
-      if (text.includes('smart') || text.includes('ai')) tags.push('smart');
-      if (text.includes('eco') || text.includes('green')) tags.push('eco-friendly');
-      if (text.includes('premium') || text.includes('luxury')) tags.push('premium');
-      if (text.includes('budget') || text.includes('affordable')) tags.push('budget-friendly');
-      
-      // Add category-based tags
-      if (text.includes('phone') || text.includes('smartphone')) tags.push('mobile', 'electronics');
-      if (text.includes('laptop') || text.includes('computer')) tags.push('computing', 'electronics');
-      if (text.includes('headphone') || text.includes('earphone')) tags.push('audio', 'electronics');
-      if (text.includes('watch') || text.includes('clock')) tags.push('wearable', 'electronics');
-      if (text.includes('camera') || text.includes('photo')) tags.push('photography', 'electronics');
-      if (text.includes('game') || text.includes('gaming')) tags.push('gaming', 'entertainment');
-      
-      // Add specification-based tags
-      if (product.material) {
-        const material = product.material.toLowerCase();
-        if (material.includes('plastic')) tags.push('plastic');
-        if (material.includes('metal') || material.includes('aluminum') || material.includes('steel')) tags.push('metal');
-        if (material.includes('wood')) tags.push('wood');
-        if (material.includes('leather')) tags.push('leather');
-        if (material.includes('fabric') || text.includes('cotton')) tags.push('fabric');
-        if (material.includes('glass')) tags.push('glass');
-        if (material.includes('ceramic')) tags.push('ceramic');
-      }
-      
-      if (product.color) {
-        const color = product.color.toLowerCase();
-        if (color.includes('black')) tags.push('black');
-        if (color.includes('white')) tags.push('white');
-        if (color.includes('red')) tags.push('red');
-        if (color.includes('blue')) tags.push('blue');
-        if (color.includes('green')) tags.push('green');
-        if (color.includes('yellow')) tags.push('yellow');
-        if (color.includes('pink')) tags.push('pink');
-        if (color.includes('purple')) tags.push('purple');
-        if (color.includes('orange')) tags.push('orange');
-        if (color.includes('brown')) tags.push('brown');
-        if (color.includes('gray') || color.includes('grey')) tags.push('gray');
-        if (color.includes('gold')) tags.push('gold');
-        if (color.includes('silver')) tags.push('silver');
-      }
-      
-      if (product.brand) {
-        tags.push(product.brand.toLowerCase().replace(/\s+/g, '-'));
-      }
-      
-      // Add warranty and certification tags
-      if (product.warranty && product.warranty.toLowerCase().includes('warranty')) tags.push('warranty');
-      if (product.productSpecs) {
-        Object.values(product.productSpecs).forEach(spec => {
-          if (spec && spec.toLowerCase().includes('certified')) tags.push('certified');
-          if (spec && spec.toLowerCase().includes('iso')) tags.push('iso-certified');
-          if (spec && spec.toLowerCase().includes('ce')) tags.push('ce-marked');
-          if (spec && spec.toLowerCase().includes('fcc')) tags.push('fcc-approved');
-        });
-      }
-      
-      // Remove duplicates and limit to 15 tags
-      const uniqueTags = [...new Set(tags)].slice(0, 15);
-      patches.push(createFieldPatch(['tags'], uniqueTags));
-      fieldCount++;
-      setAutoFillProgress(prev => [...prev, `✅ Tags: Generated ${uniqueTags.length} smart tags`]);
-      console.log('🔧 Created tags patch:', uniqueTags);
-      
-      // Set import metadata
-      patches.push(createFieldPatch(['importMetadata'], {
-        importedFrom: product.url.includes('aliexpress.com') ? 'aliexpress' : 'alibaba',
-        importedAt: new Date().toISOString(),
-        originalUrl: product.url
-      }));
-      fieldCount++;
-      setAutoFillProgress(prev => [...prev, `✅ Import Metadata: Complete tracking info`]);
-      console.log('🔧 Created metadata patch');
-      
-      // Set creation and update timestamps
-      const now = new Date().toISOString();
-      patches.push(createFieldPatch(['createdAt'], now));
-      patches.push(createFieldPatch(['updatedAt'], now));
-      fieldCount += 2;
-      setAutoFillProgress(prev => [...prev, `✅ Timestamps: Created & Updated set`]);
-      console.log('🔧 Created timestamp patches:', now);
+      const data = await response.json();
 
-      // Update the productDiscovery field value using the field-level onChange
-      patches.push(createFieldPatch(['productDiscovery'], {
-        searchQuery: searchQuery,
-        selectedProduct: {
-          title: product.title,
-          url: product.url,
-          price: product.price
-        }
-      }));
-
-      console.log('📦 All patches created:', patches);
-      console.log('🎯 About to apply patches via onChange...');
-
-      // Apply all patches
-      const success = applyFieldPatches(patches);
-      
-      if (success) {
-        // Show success message with field count
+      if (data.success) {
+        setAutoFillProgress(prev => [...prev, `✅ Product created successfully!`]);
+        setAutoFillProgress(prev => [...prev, `📝 Title: ${data.product.title}`]);
+        setAutoFillProgress(prev => [...prev, `💰 Price: $${data.product.price}`]);
+        setAutoFillProgress(prev => [...prev, `🏪 Supplier: ${data.product.supplierName}`]);
+        setAutoFillProgress(prev => [...prev, `🔗 Slug: ${data.product.slug}`]);
+        setAutoFillProgress(prev => [...prev, `📅 Imported: ${new Date(data.product.importedAt).toLocaleDateString()}`]);
+        
         setIsAutoFilling(false);
         setAutoFillSuccess(true);
-        setTimeout(() => setAutoFillSuccess(false), 5000); // Hide after 5 seconds
+        setTimeout(() => setAutoFillSuccess(false), 10000); // Show success for 10 seconds
         
-        console.log(`✅ Auto-fill process completed for ${fieldCount} fields:`, {
-          title: product.title,
-          description: enhancedDescription,
-          price: price,
-          supplierUrl: product.url,
-          supplierName: product.supplierName,
-          stock: 100,
-          isActive: true,
-          slug: slug,
-          tags: uniqueTags,
-          importedFromAlibaba: true,
-          totalFields: fieldCount
-        });
+        console.log(`✅ Product created successfully:`, data.product);
+        
+        // Show success message with product details
+        setSuccess(`🎉 Product "${data.product.title}" has been successfully added to your platform!`);
+        setTimeout(() => setSuccess(null), 10000);
+        
       } else {
-        throw new Error('Failed to apply patches');
+        throw new Error(data.error || 'Failed to create product');
       }
 
     } catch (error) {
-      console.error('❌ Auto-fill error:', error);
-      setError('Failed to auto-fill product form');
+      console.error('❌ Product creation error:', error);
+      setError(`Failed to create product: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsAutoFilling(false);
     }
   };
@@ -392,7 +214,7 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
     <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
       <div style={{ marginBottom: '20px' }}>
         <h3 style={{ margin: '0 0 15px 0', fontSize: '18px', fontWeight: '600', color: '#333' }}>
-          🔍 Discover Alibaba Products
+          🚀 Direct Product Import from Alibaba
         </h3>
         
         {/* Search Input */}
@@ -761,6 +583,30 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
                       {product.supplierName}
                     </span>
                   </div>
+                  
+                  {/* Direct Import Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      selectProduct(product);
+                    }}
+                    disabled={isAutoFilling}
+                    style={{
+                      width: '100%',
+                      marginTop: '10px',
+                      padding: '8px 12px',
+                      backgroundColor: isAutoFilling ? '#95a5a6' : '#e74c3c',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: isAutoFilling ? 'not-allowed' : 'pointer',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      transition: 'background-color 0.2s ease'
+                    }}
+                  >
+                    {isAutoFilling ? '🚀 Creating...' : '🚀 Add to Platform'}
+                  </button>
                 </div>
               </div>
             ))}
@@ -861,9 +707,9 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '18px' }}>✅</span>
             <div>
-              <strong>Product Auto-Filled Successfully!</strong>
+              <strong>Product Created Successfully!</strong>
               <div style={{ fontSize: '14px', marginTop: '5px' }}>
-                All product fields have been automatically populated with real-time data from Alibaba.
+                Product has been directly added to your platform with all real-time data from Alibaba.
               </div>
             </div>
           </div>
@@ -886,7 +732,7 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
             marginBottom: '10px'
           }}>
             <h5 style={{ margin: '0', fontSize: '14px', fontWeight: '600', color: '#333' }}>
-              Auto-Filling in Progress:
+              Creating Product in Progress:
             </h5>
             <span style={{ 
               fontSize: '12px', 
@@ -897,7 +743,7 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
               borderRadius: '12px',
               border: '1px solid #007bff'
             }}>
-              {autoFillProgress.length} / 15+ fields
+              {autoFillProgress.length} / 6 steps
             </span>
           </div>
           <ul style={{ listStyle: 'none', padding: '0', margin: '0' }}>
@@ -951,11 +797,30 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
           <div><strong>Search Query:</strong> {searchQuery || 'None'}</div>
           <div><strong>Products Found:</strong> {discoveredProducts.length}</div>
           <div><strong>Selected Product:</strong> {selectedProduct ? selectedProduct.title : 'None'}</div>
-          <div><strong>Auto-fill Status:</strong> {isAutoFilling ? 'In Progress' : 'Ready'}</div>
+          <div><strong>Product Creation Status:</strong> {isAutoFilling ? 'In Progress' : 'Ready'}</div>
           <div><strong>ProductDiscovery Value:</strong> {value?.productDiscovery ? 'Set' : 'Not set'}</div>
-          <div><strong>Auto-fill Progress:</strong> {autoFillProgress.length} / 15+ fields</div>
+          <div><strong>Creation Progress:</strong> {autoFillProgress.length} / 6 steps</div>
         </div>
       </div>
+
+      {/* Success Message */}
+      {success && (
+        <div style={{ 
+          padding: '15px', 
+          backgroundColor: '#d4edda', 
+          border: '1px solid #c3e6cb', 
+          borderRadius: '4px', 
+          color: '#155724',
+          marginBottom: '15px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '18px' }}>✅</span>
+            <div>
+              <strong>{success}</strong>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         @keyframes spin {
