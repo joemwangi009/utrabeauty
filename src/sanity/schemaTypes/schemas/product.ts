@@ -219,7 +219,7 @@ export const product = defineType({
                 }
             ],
             readOnly: true
-        },
+        }),
         defineField({
             name: 'createdAt',
             title: 'Created At',
