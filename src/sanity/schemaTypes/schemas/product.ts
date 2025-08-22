@@ -6,15 +6,16 @@ export const product = defineType({
     title: 'Product',
     type: 'document',
     fields: [
+        // Main Product Discovery Interface - Clean and Professional
         defineField({
             name: 'productDiscovery',
-            title: '🚀 Alibaba Product Discovery',
+            title: '🚀 Alibaba Product Discovery & Import',
             type: 'object',
             components: {
                 input: ProductDiscovery
             },
             options: {
-                collapsible: true,
+                collapsible: false,
                 collapsed: false
             },
             fields: [
@@ -22,12 +23,13 @@ export const product = defineType({
                     name: 'searchQuery',
                     title: 'Search Query',
                     type: 'string',
-                    description: 'Enter search terms to find products on Alibaba'
+                    hidden: true
                 },
                 {
                     name: 'selectedProduct',
                     title: 'Selected Product',
                     type: 'object',
+                    hidden: true,
                     fields: [
                         {
                             name: 'title',
@@ -50,30 +52,36 @@ export const product = defineType({
                     ]
                 }
             ],
-            description: '🔍 Search Alibaba products and click to add them directly to your catalog'
+            description: '🔍 Search Alibaba products and click to add them directly to your catalog. No manual form filling required.'
         }),
+        
+        // Hidden fields that get auto-populated when a product is selected
         defineField({
             name: 'title',
             title: 'Title',
             type: 'string',
+            hidden: true,
             validation: (Rule) => Rule.required().min(1).max(100)
         }),
         defineField({
             name: 'description',
             title: 'Description',
             type: 'text',
-            validation: (Rule) => Rule.required().min(10).max(1000)
+            hidden: true,
+            validation: (Rule) => Rule.required().min(10).max(2000)
         }),
         defineField({
             name: 'price',
             title: 'Price',
             type: 'number',
+            hidden: true,
             validation: (Rule) => Rule.required().positive().precision(2)
         }),
         defineField({
             name: 'image',
             title: 'Image',
             type: 'image',
+            hidden: true,
             options: {
                 hotspot: true
             },
@@ -83,6 +91,7 @@ export const product = defineType({
             name: 'category',
             title: 'Category',
             type: 'reference',
+            hidden: true,
             to: [{ type: 'productCategory' }],
             validation: (Rule) => Rule.required()
         }),
@@ -90,40 +99,36 @@ export const product = defineType({
             name: 'supplierUrl',
             title: 'Supplier URL',
             type: 'url',
+            hidden: true,
             description: 'Alibaba product URL'
         }),
         defineField({
             name: 'supplierName',
             title: 'Supplier Name',
             type: 'string',
+            hidden: true,
             description: 'Name of the supplier/vendor from Alibaba',
             validation: (Rule) => Rule.max(100)
-        }),
-        defineField({
-            name: 'importedFromAlibaba',
-            title: 'Imported from Alibaba',
-            type: 'boolean',
-            initialValue: false,
-            readOnly: true
         }),
         defineField({
             name: 'stock',
             title: 'Stock',
             type: 'number',
-            initialValue: 100,
+            hidden: true,
             validation: (Rule) => Rule.required().positive().integer()
         }),
         defineField({
             name: 'isActive',
             title: 'Active',
             type: 'boolean',
-            initialValue: true,
-            description: 'Whether this product is available for purchase'
+            hidden: true,
+            initialValue: true
         }),
         defineField({
             name: 'slug',
             title: 'Slug',
             type: 'slug',
+            hidden: true,
             options: {
                 source: 'title',
                 maxLength: 96
@@ -134,22 +139,20 @@ export const product = defineType({
             name: 'tags',
             title: 'Tags',
             type: 'array',
+            hidden: true,
             of: [{ type: 'string' }],
             options: {
                 layout: 'tags'
             }
         }),
+        
+        // Import metadata (hidden but important for tracking)
         defineField({
             name: 'importMetadata',
             title: 'Import Metadata',
             type: 'object',
+            hidden: true,
             fields: [
-                {
-                    name: 'importedFrom',
-                    title: 'Imported From',
-                    type: 'string',
-                    readOnly: true
-                },
                 {
                     name: 'importedAt',
                     title: 'Import Date',
@@ -220,16 +223,20 @@ export const product = defineType({
             ],
             readOnly: true
         }),
+        
+        // System fields
         defineField({
             name: 'createdAt',
             title: 'Created At',
             type: 'datetime',
+            hidden: true,
             readOnly: true
         }),
         defineField({
             name: 'updatedAt',
             title: 'Updated At',
             type: 'datetime',
+            hidden: true,
             readOnly: true
         })
     ],

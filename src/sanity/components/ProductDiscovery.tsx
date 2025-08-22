@@ -12,26 +12,35 @@ interface DiscoveredProduct {
   title: string;
   description: string;
   price: string;
+  originalPrice?: string;
   images: string[];
   url: string;
   supplierName: string;
-  scrapedAt: string;
-  // Additional real product details
+  supplierRating?: number;
+  productRating?: number;
+  soldCount?: number;
   minOrderQuantity?: string;
   material?: string;
   color?: string;
   size?: string;
   brand?: string;
   warranty?: string;
-  shippingInfo?: string;
+  shippingInfo?: {
+    free: boolean;
+    cost?: number;
+    estimatedDays?: number;
+    fromCountry?: string;
+  };
   productSpecs?: Record<string, string>;
+  scrapedAt: string;
 }
 
 interface SearchFilters {
   category: string;
   minPrice: string;
   maxPrice: string;
-  sortBy: 'price' | 'relevance' | 'newest';
+  sortBy: 'price' | 'relevance' | 'newest' | 'rating' | 'sold';
+  supplierRating: string;
 }
 
 export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, value }) => {
@@ -43,13 +52,13 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
     category: '',
     minPrice: '',
     maxPrice: '',
-    sortBy: 'relevance'
+    sortBy: 'relevance',
+    supplierRating: ''
   });
   const [error, setError] = useState<string | null>(null);
-  const [autoFillSuccess, setAutoFillSuccess] = useState(false);
-  const [isAutoFilling, setIsAutoFilling] = useState(false);
-  const [autoFillProgress, setAutoFillProgress] = useState<string[]>([]);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<string[]>([]);
 
   // Function to create a patch for a specific field
   const createFieldPatch = (fieldPath: string[], value: any) => {
@@ -59,14 +68,8 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
   // Function to apply patches to multiple fields
   const applyFieldPatches = (patches: any[]) => {
     try {
-      // Create a single PatchEvent with all patches
       const patchEvent = PatchEvent.from(patches);
-      console.log('🔧 Applying patches:', patchEvent);
-      
-      // Apply the patches
       onChange(patchEvent);
-      console.log('✅ Patches applied successfully');
-      
       return true;
     } catch (error) {
       console.error('❌ Failed to apply patches:', error);
@@ -100,27 +103,29 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
 
       if (data.success && data.products) {
         setDiscoveredProducts(data.products);
+        if (data.products.length === 0) {
+          setError('No products found. Try adjusting your search terms or filters.');
+        }
       } else {
         setError(data.error || 'Failed to discover products');
       }
     } catch (err) {
-      setError('Network error occurred');
+      setError('Network error occurred. Please check your connection and try again.');
       console.error('Search error:', err);
     } finally {
       setIsSearching(false);
     }
   };
 
-  const selectProduct = async (product: DiscoveredProduct) => {
+  const importProduct = async (product: DiscoveredProduct) => {
     setSelectedProduct(product);
-    setIsAutoFilling(true);
-    setAutoFillProgress([]);
+    setIsImporting(true);
+    setImportProgress([]);
     
     try {
-      console.log('🚀 Starting PRODUCTION product creation for:', product.title);
-      setAutoFillProgress(prev => [...prev, `🚀 Creating product: ${product.title.substring(0, 30)}...`]);
+      setImportProgress(prev => [...prev, `🚀 Starting import: ${product.title.substring(0, 40)}...`]);
       
-      // Call the PRODUCTION-GRADE product creation API
+      // Call the production-grade product creation API
       const response = await fetch('/api/products/create', {
         method: 'POST',
         headers: {
@@ -128,258 +133,112 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
         },
         body: JSON.stringify({
           product: product,
-          categoryId: 'electronics', // Default category
+          categoryId: 'electronics', // Default category - can be enhanced later
           customPrice: parseFloat(product.price.replace(/[^\d.,]/g, '')) || 29.99,
           customStock: 100,
-          customTags: ['alibaba-imported', 'production-ready']
+          customTags: ['alibaba-imported', 'production-ready', 'verified-supplier']
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setAutoFillProgress(prev => [...prev, `✅ PRODUCTION product created successfully!`]);
-        setAutoFillProgress(prev => [...prev, `📝 Title: ${data.product.title}`]);
-        setAutoFillProgress(prev => [...prev, `💰 Price: $${data.product.price}`]);
-        setAutoFillProgress(prev => [...prev, `🏪 Supplier: ${data.product.supplierName}`]);
-        setAutoFillProgress(prev => [...prev, `🔗 Slug: ${data.product.slug}`]);
-        setAutoFillProgress(prev => [...prev, `📅 Imported: ${new Date(data.product.importedAt).toLocaleDateString()}`]);
-        setAutoFillProgress(prev => [...prev, `🌐 Catalog URL: ${data.product.catalogUrl}`]);
+        setImportProgress(prev => [...prev, `✅ Product imported successfully!`]);
+        setImportProgress(prev => [...prev, `📝 Title: ${data.product.title}`]);
+        setImportProgress(prev => [...prev, `💰 Price: $${data.product.price}`]);
+        setImportProgress(prev => [...prev, `🏪 Supplier: ${data.product.supplierName}`]);
+        setImportProgress(prev => [...prev, `🔗 Slug: ${data.product.slug}`]);
+        setImportProgress(prev => [...prev, `📅 Imported: ${new Date(data.product.importedAt).toLocaleDateString()}`]);
         
-        setIsAutoFilling(false);
-        setAutoFillSuccess(true);
-        setTimeout(() => setAutoFillSuccess(false), 15000); // Show success for 15 seconds
+        setIsImporting(false);
         
-        console.log(`✅ PRODUCTION product created successfully:`, data.product);
+        // Show success message
+        setSuccess(`🎉 SUCCESS! Product "${data.product.title}" has been added to your catalog!`);
+        setTimeout(() => setSuccess(null), 10000);
         
-        // Show PRODUCTION success message
-        setSuccess(`🎉 PRODUCTION SUCCESS! Product "${data.product.title}" has been added to your catalog! View it at: ${data.product.catalogUrl}`);
-        setTimeout(() => setSuccess(null), 15000);
+        // Clear the search results to show the imported product
+        setDiscoveredProducts([]);
+        setSearchQuery('');
         
       } else {
-        throw new Error(data.error || 'Failed to create PRODUCTION product');
+        throw new Error(data.error || 'Failed to import product');
       }
 
     } catch (error) {
-      console.error('❌ PRODUCTION product creation error:', error);
-      setError(`PRODUCTION ERROR: Failed to create product: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setIsAutoFilling(false);
+      console.error('❌ Product import error:', error);
+      setError(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setIsImporting(false);
     }
   };
 
-  const clearSelection = () => {
+  const clearSearch = () => {
+    setSearchQuery('');
+    setDiscoveredProducts([]);
+    setError(null);
+    setSuccess(null);
     setSelectedProduct(null);
-    
-    // Clear all auto-filled fields using patches
-    const clearPatches = [
-      unset(['title']),
-      unset(['description']),
-      unset(['price']),
-      unset(['supplierUrl']),
-      unset(['supplierName']),
-      unset(['importedFromAlibaba']),
-      unset(['stock']),
-      unset(['isActive']),
-      unset(['slug']),
-      unset(['tags']),
-      unset(['importMetadata']),
-      unset(['createdAt']),
-      unset(['updatedAt'])
-    ];
-    
-    // Apply clear patches
-    const success = applyFieldPatches(clearPatches);
-    
-    if (success) {
-      // Clear the productDiscovery field using field-level onChange
-      onChange(PatchEvent.from([unset(['productDiscovery'])]));
-      console.log('🧹 Cleared all auto-filled product fields');
-    } else {
-      console.error('❌ Failed to clear fields');
-    }
   };
 
-  // Function to verify form values
-  const verifyFormValues = () => {
-    console.log('🔍 Verifying form values:');
-    // This function is no longer directly applicable as formValues is removed.
-    // The onChange prop is the primary way to interact with the form.
-    // We can log the current value of the 'productDiscovery' field if needed.
-    // For now, we'll just log the current value of the 'productDiscovery' field.
-    const currentProductDiscovery = value?.productDiscovery;
-    if (currentProductDiscovery) {
-      console.log('📋 Current ProductDiscovery Value:', currentProductDiscovery);
-    } else {
-      console.log('📋 Current ProductDiscovery Value: Not set');
-    }
+  const formatPrice = (price: string) => {
+    const numericPrice = parseFloat(price.replace(/[^\d.,]/g, ''));
+    return isNaN(numericPrice) ? price : `$${numericPrice.toFixed(2)}`;
+  };
+
+  const getRatingStars = (rating?: number) => {
+    if (!rating) return '⭐';
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    return '⭐'.repeat(fullStars) + (hasHalfStar ? '⭐' : '') + '☆'.repeat(5 - fullStars - (hasHalfStar ? 1 : 0));
   };
 
   return (
-    <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ margin: '0 0 15px 0', fontSize: '18px', fontWeight: '600', color: '#333' }}>
-          🚀 Direct Product Import from Alibaba
-        </h3>
-        
-        {/* Search Input */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-          <input
-            type="text"
-            placeholder="Search for products (e.g., 'wireless headphones', 'smartphone case')"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && searchProducts()}
-            style={{
-              flex: 1,
-              padding: '10px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
-          />
-          <button 
+    <div className="p-6 bg-white rounded-lg border border-gray-200">
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          🚀 Alibaba Product Discovery & Import
+        </h2>
+        <p className="text-gray-600">
+          Search for products on Alibaba and import them directly to your catalog with one click.
+        </p>
+      </div>
+
+      {/* Search Interface */}
+      <div className="mb-6">
+        <div className="flex gap-3 mb-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search for products (e.g., 'wireless headphones', 'smartphone cases')"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onKeyPress={(e) => e.key === 'Enter' && searchProducts()}
+            />
+          </div>
+          <button
             onClick={searchProducts}
             disabled={isSearching}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isSearching ? 'not-allowed' : 'pointer',
-              fontSize: '14px'
-            }}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
-            {isSearching ? 'Searching...' : 'Search'}
+            {isSearching ? '🔍 Searching...' : '🔍 Search'}
           </button>
-          <button 
-            onClick={() => {
-              // Test auto-fill with sample data
-              const testProduct: DiscoveredProduct = {
-                id: 'test-1',
-                title: 'Test Wireless Headphones',
-                description: 'High-quality wireless Bluetooth headphones with noise cancellation',
-                price: '29.99',
-                images: ['https://via.placeholder.com/150'],
-                url: 'https://alibaba.com/test-product',
-                supplierName: 'Test Supplier',
-                scrapedAt: new Date().toISOString(),
-                material: 'Plastic',
-                color: 'Black',
-                size: 'One Size',
-                brand: 'TestBrand'
-              };
-              selectProduct(testProduct);
-            }}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            🧪 Test Auto-Fill
-          </button>
-        </div>
-
-        {/* Test Buttons */}
-        <div style={{ 
-          marginBottom: '15px', 
-          padding: '15px', 
-          backgroundColor: '#f8f9fa', 
-          borderRadius: '4px',
-          border: '1px solid #dee2e6'
-        }}>
-          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600', color: '#495057' }}>
-            🧪 Test & Debug:
-          </h4>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          {discoveredProducts.length > 0 && (
             <button
-              onClick={() => {
-                console.log('🧪 Test button clicked');
-                console.log('🔍 Current value:', value);
-                
-                // Test a simple patch using the new approach
-                try {
-                  const testPatch = createFieldPatch(['title'], '🧪 TEST TITLE FROM BUTTON');
-                  console.log('🧪 Test patch created:', testPatch);
-                  
-                  const success = applyFieldPatches([testPatch]);
-                  if (success) {
-                    console.log('🧪 Test patch applied successfully');
-                  } else {
-                    console.log('🧪 Test patch failed to apply');
-                  }
-                } catch (error) {
-                  console.error('🧪 Test failed:', error);
-                }
-              }}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '12px'
-              }}
+              onClick={clearSearch}
+              className="px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-medium"
             >
-              🧪 Test Patch Application
+              🗑️ Clear
             </button>
-            
-            <button
-              onClick={() => {
-                console.log('🔍 Verify button clicked');
-                console.log('📋 Current form state:', {
-                  onChange: typeof onChange,
-                  value: value,
-                  selectedProduct: selectedProduct
-                });
-              }}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '12px'
-              }}
-            >
-              🔍 Verify Form State
-            </button>
-          </div>
+          )}
         </div>
 
-        {/* Current Form Values Display */}
-        <div style={{ 
-          marginBottom: '15px', 
-          padding: '15px', 
-          backgroundColor: 'white', 
-          borderRadius: '4px',
-          border: '1px solid #dee2e6'
-        }}>
-          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600', color: '#495057' }}>
-            📋 Current Form State:
-          </h4>
-          <div style={{ fontSize: '12px', color: '#6c757d', lineHeight: '1.4' }}>
-            <div><strong>Search Query:</strong> {searchQuery || 'Not set'}</div>
-            <div><strong>Products Found:</strong> {discoveredProducts.length}</div>
-            <div><strong>Selected Product:</strong> {selectedProduct ? selectedProduct.title : 'None'}</div>
-            <div><strong>Auto-fill Status:</strong> {isAutoFilling ? 'In Progress' : 'Ready'}</div>
-            <div><strong>ProductDiscovery Value:</strong> {value?.productDiscovery ? 'Set' : 'Not set'}</div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '15px' }}>
+        {/* Advanced Filters */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <select
             value={filters.category}
-            onChange={(e) => setFilters({...filters, category: e.target.value})}
-            style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+            onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="">All Categories</option>
             <option value="electronics">Electronics</option>
@@ -390,448 +249,183 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
           </select>
           
           <input
-            type="text"
+            type="number"
             placeholder="Min Price"
             value={filters.minPrice}
-            onChange={(e) => setFilters({...filters, minPrice: e.target.value})}
-            style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+            onChange={(e) => setFilters(prev => ({ ...prev, minPrice: e.target.value }))}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
           />
           
           <input
-            type="text"
+            type="number"
             placeholder="Max Price"
             value={filters.maxPrice}
-            onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
-            style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+            onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
           />
           
           <select
             value={filters.sortBy}
-            onChange={(e) => setFilters({...filters, sortBy: e.target.value as any})}
-            style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+            onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value as any }))}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="relevance">Relevance</option>
-            <option value="price">Price</option>
+            <option value="price">Price: Low to High</option>
             <option value="newest">Newest</option>
+            <option value="rating">Highest Rating</option>
+            <option value="sold">Most Sold</option>
+          </select>
+          
+          <select
+            value={filters.supplierRating}
+            onChange={(e) => setFilters(prev => ({ ...prev, supplierRating: e.target.value }))}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Any Rating</option>
+            <option value="4.5">4.5+ Stars</option>
+            <option value="4.0">4.0+ Stars</option>
+            <option value="3.5">3.5+ Stars</option>
           </select>
         </div>
       </div>
 
-      {/* Error Display */}
+      {/* Error Messages */}
       {error && (
-        <div style={{ 
-          padding: '15px', 
-          backgroundColor: '#f8d7da', 
-          border: '1px solid #f5c6cb', 
-          borderRadius: '4px', 
-          color: '#721c24',
-          marginBottom: '15px'
-        }}>
-          {error}
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center">
+            <span className="text-red-600 mr-2">❌</span>
+            <span className="text-red-800">{error}</span>
+          </div>
         </div>
       )}
 
-      {/* Loading State */}
-      {isSearching && (
-        <div style={{ 
-          padding: '20px', 
-          textAlign: 'center', 
-          backgroundColor: 'white', 
-          borderRadius: '4px',
-          marginBottom: '15px'
-        }}>
-          <div style={{ display: 'inline-block', marginRight: '10px' }}>
-            <div style={{ 
-              width: '20px', 
-              height: '20px', 
-              border: '2px solid #f3f3f3', 
-              borderTop: '2px solid #007bff', 
-              borderRadius: '50%', 
-              animation: 'spin 1s linear infinite' 
-            }}></div>
+      {/* Success Messages */}
+      {success && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center">
+            <span className="text-green-600 mr-2">✅</span>
+            <span className="text-green-800">{success}</span>
           </div>
-          Searching Alibaba for products...
+        </div>
+      )}
+
+      {/* Import Progress */}
+      {isImporting && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center mb-2">
+            <span className="text-blue-600 mr-2">🔄</span>
+            <span className="text-blue-800 font-medium">Importing Product...</span>
+          </div>
+          <div className="space-y-1">
+            {importProgress.map((step, index) => (
+              <div key={index} className="text-sm text-blue-700">{step}</div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Search Results */}
       {discoveredProducts.length > 0 && (
-        <div style={{ 
-          backgroundColor: 'white', 
-          padding: '20px', 
-          borderRadius: '4px',
-          marginBottom: '15px'
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '15px'
-          }}>
-            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
-              Found {discoveredProducts.length} Products
-            </h4>
-            {selectedProduct && (
-              <button 
-                onClick={clearSelection}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#dc3545',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '12px'
-                }}
-              >
-                Clear Selection
-              </button>
-            )}
-          </div>
-          
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', 
-            gap: '15px' 
-          }}>
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            📦 Found {discoveredProducts.length} Products
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {discoveredProducts.map((product) => (
-              <div 
-                key={product.id} 
-                style={{ 
-                  border: selectedProduct?.id === product.id ? '2px solid #007bff' : '1px solid #ddd',
-                  borderRadius: '4px',
-                  padding: '15px',
-                  cursor: 'pointer',
-                  backgroundColor: selectedProduct?.id === product.id ? '#f8f9ff' : 'white',
-                  transition: 'all 0.2s ease'
-                }}
-                onClick={() => selectProduct(product)}
+              <div
+                key={product.id}
+                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
               >
                 {/* Product Image */}
-                {product.images[0] && (
-                  <div style={{ 
-                    height: '120px', 
-                    overflow: 'hidden', 
-                    marginBottom: '10px',
-                    borderRadius: '4px'
-                  }}>
-                    <img
-                      src={product.images[0]}
-                      alt={product.title}
-                      style={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        objectFit: 'cover' 
-                      }}
-                    />
-                  </div>
-                )}
-                
+                <div className="mb-3">
+                  <img
+                    src={product.images[0] || '/placeholder-product.jpg'}
+                    alt={product.title}
+                    className="w-full h-32 object-cover rounded-md"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/placeholder-product.jpg';
+                    }}
+                  />
+                </div>
+
                 {/* Product Info */}
-                <div>
-                  <h5 style={{ 
-                    margin: '0 0 8px 0', 
-                    fontSize: '14px', 
-                    fontWeight: '600',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                  }}>
+                <div className="mb-3">
+                  <h4 className="font-medium text-gray-900 text-sm line-clamp-2 mb-2">
                     {product.title}
-                  </h5>
+                  </h4>
                   
-                  <p style={{
-                    margin: '0 0 10px 0',
-                    fontSize: '12px',
-                    color: '#666',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    lineHeight: '1.4'
-                  }}>
-                    {product.description}
-                  </p>
-                  
-                  {/* Additional Specifications */}
-                  {(product.material || product.color || product.size || product.brand) && (
-                    <div style={{
-                      margin: '0 0 10px 0',
-                      fontSize: '11px',
-                      color: '#888'
-                    }}>
-                      {product.material && <span style={{ marginRight: '8px' }}>📦 {product.material}</span>}
-                      {product.color && <span style={{ marginRight: '8px' }}>🎨 {product.color}</span>}
-                      {product.size && <span style={{ marginRight: '8px' }}>📏 {product.size}</span>}
-                      {product.brand && <span style={{ marginRight: '8px' }}>🏷️ {product.brand}</span>}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-lg font-bold text-blue-600">
+                      {formatPrice(product.price)}
+                    </span>
+                    {product.originalPrice && (
+                      <span className="text-sm text-gray-500 line-through">
+                        {formatPrice(product.originalPrice)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-gray-600">{product.supplierName}</span>
+                    {product.supplierRating && (
+                      <span className="text-xs text-yellow-600">
+                        {getRatingStars(product.supplierRating)}
+                      </span>
+                    )}
+                  </div>
+
+                  {product.soldCount && (
+                    <div className="text-xs text-gray-500 mb-2">
+                      📦 {product.soldCount.toLocaleString()} sold
                     </div>
                   )}
-                  
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center' 
-                  }}>
-                    <span style={{
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      padding: '4px 8px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: '600'
-                    }}>
-                      ${product.price}
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#666' }}>
-                      {product.supplierName}
-                    </span>
-                  </div>
-                  
-                  {/* Direct Import Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      selectProduct(product);
-                    }}
-                    disabled={isAutoFilling}
-                    style={{
-                      width: '100%',
-                      marginTop: '10px',
-                      padding: '8px 12px',
-                      backgroundColor: isAutoFilling ? '#95a5a6' : '#e74c3c',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: isAutoFilling ? 'not-allowed' : 'pointer',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      transition: 'background-color 0.2s ease'
-                    }}
-                  >
-                    {isAutoFilling ? '🚀 Creating...' : '🚀 Add to Catalog'}
-                  </button>
+
+                  {product.shippingInfo && (
+                    <div className="text-xs text-gray-500 mb-2">
+                      🚚 {product.shippingInfo.free ? 'Free Shipping' : `$${product.shippingInfo.cost} shipping`}
+                    </div>
+                  )}
                 </div>
+
+                {/* Import Button */}
+                <button
+                  onClick={() => importProduct(product)}
+                  disabled={isImporting}
+                  className="w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+                >
+                  {isImporting && selectedProduct?.id === product.id ? '🔄 Importing...' : '📥 Import to Catalog'}
+                </button>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Selected Product Summary */}
-      {selectedProduct && (
-        <div style={{ 
-          backgroundColor: '#e7f3ff', 
-          padding: '20px', 
-          borderRadius: '4px',
-          border: '1px solid #b3d9ff'
-        }}>
-          <h4 style={{ margin: '0 0 15px 0', fontSize: '16px', fontWeight: '600', color: '#0056b3' }}>
-            ✅ Selected Product - All Fields Will Be Auto-Filled
-          </h4>
-          <div style={{ fontSize: '14px', color: '#333' }}>
-            <p style={{ margin: '5px 0', fontWeight: '600' }}>{selectedProduct.title}</p>
-            <p style={{ margin: '5px 0' }}>Price: ${selectedProduct.price}</p>
-            <p style={{ margin: '5px 0' }}>Supplier: {selectedProduct.supplierName}</p>
-            <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>
-              URL: {selectedProduct.url}
-            </p>
-            
-            {/* Additional Specifications */}
-            {(selectedProduct.material || selectedProduct.color || selectedProduct.size || selectedProduct.brand) && (
-              <div style={{ margin: '10px 0', padding: '10px', backgroundColor: 'white', borderRadius: '4px' }}>
-                <p style={{ margin: '5px 0', fontWeight: '600', fontSize: '12px', color: '#0056b3' }}>
-                  📋 Additional Details to be Auto-Filled:
-                </p>
-                {selectedProduct.material && <p style={{ margin: '3px 0', fontSize: '12px' }}>📦 Material: {selectedProduct.material}</p>}
-                {selectedProduct.color && <p style={{ margin: '3px 0', fontSize: '12px' }}>🎨 Color: {selectedProduct.color}</p>}
-                {selectedProduct.size && <p style={{ margin: '3px 0', fontSize: '12px' }}>📏 Size: {selectedProduct.size}</p>}
-                {selectedProduct.brand && <p style={{ margin: '3px 0', fontSize: '12px' }}>🏷️ Brand: {selectedProduct.brand}</p>}
-                {selectedProduct.warranty && <p style={{ margin: '3px 0', fontSize: '12px' }}>🛡️ Warranty: {selectedProduct.warranty}</p>}
-                {selectedProduct.minOrderQuantity && <p style={{ margin: '3px 0', fontSize: '12px' }}>📦 Min Order: {selectedProduct.minOrderQuantity}</p>}
-              </div>
-            )}
-            
-            <p style={{ margin: '10px 0', fontSize: '12px', color: '#0056b3', fontWeight: '600' }}>
-              ✨ Auto-filling: title, description, price, supplier info, stock (100), tags, slug, timestamps, and more!
-            </p>
-            
-            {/* Field Count */}
-            <div style={{ 
-              margin: '10px 0', 
-              padding: '8px', 
-              backgroundColor: '#d4edda', 
-              borderRadius: '4px',
-              border: '1px solid #c3e6cb'
-            }}>
-              <p style={{ margin: '0', fontSize: '11px', color: '#155724', fontWeight: '600' }}>
-                🔢 Total Fields to Auto-Fill: 15+ fields including all specifications, tags, and metadata
-              </p>
-            </div>
-            
-            {/* Auto-Fill Preview */}
-            <div style={{ 
-              margin: '10px 0', 
-              padding: '12px', 
-              backgroundColor: '#fff3cd', 
-              borderRadius: '4px',
-              border: '1px solid #ffeaa7'
-            }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#856404', fontWeight: '600' }}>
-                📋 Auto-Fill Preview:
-              </p>
-              <div style={{ fontSize: '11px', color: '#856404', lineHeight: '1.4' }}>
-                <div>✅ <strong>Title:</strong> {selectedProduct.title}</div>
-                <div>✅ <strong>Description:</strong> Enhanced with specifications</div>
-                <div>✅ <strong>Price:</strong> ${selectedProduct.price}</div>
-                <div>✅ <strong>Stock:</strong> 100 (default)</div>
-                <div>✅ <strong>Active:</strong> Yes</div>
-                <div>✅ <strong>Slug:</strong> Auto-generated</div>
-                <div>✅ <strong>Tags:</strong> Smart tags based on content</div>
-                <div>✅ <strong>Supplier URL:</strong> {selectedProduct.url}</div>
-                <div>✅ <strong>Supplier Name:</strong> {selectedProduct.supplierName}</div>
-                <div>✅ <strong>Import Metadata:</strong> Complete tracking</div>
-                <div>✅ <strong>Timestamps:</strong> Created/Updated</div>
-              </div>
-            </div>
-          </div>
+      {/* No Results Message */}
+      {!isSearching && discoveredProducts.length === 0 && searchQuery && !error && (
+        <div className="text-center py-8">
+          <div className="text-gray-400 text-6xl mb-4">🔍</div>
+          <p className="text-gray-600">No products found for &quot;{searchQuery}&quot;</p>
+          <p className="text-gray-500 text-sm mt-2">Try adjusting your search terms or filters</p>
         </div>
       )}
 
-      {/* Auto-Fill Success Message */}
-      {autoFillSuccess && (
-        <div style={{ 
-          padding: '15px', 
-          backgroundColor: '#d4edda', 
-          border: '1px solid #c3e6cb', 
-          borderRadius: '4px', 
-          color: '#155724',
-          marginBottom: '15px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '18px' }}>✅</span>
-            <div>
-              <strong>PRODUCTION Product Created Successfully!</strong>
-              <div style={{ fontSize: '14px', marginTop: '5px' }}>
-                Product has been directly added to your catalog with 100% accurate data from Alibaba.
-              </div>
-            </div>
+      {/* Initial State */}
+      {!searchQuery && discoveredProducts.length === 0 && !error && !success && (
+        <div className="text-center py-12">
+          <div className="text-blue-400 text-6xl mb-4">🚀</div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Ready to Discover Products</h3>
+          <p className="text-gray-600 mb-4">
+            Enter a search term above to find products on Alibaba
+          </p>
+          <div className="text-sm text-gray-500 space-y-1">
+                         <p>💡 Try searching for: &quot;wireless headphones&quot;, &quot;smartphone cases&quot;, &quot;kitchen appliances&quot;</p>
+            <p>🔍 Use filters to narrow down results by price, category, or supplier rating</p>
+                         <p>📥 Click &quot;Import to Catalog&quot; to add products with one click</p>
           </div>
         </div>
       )}
-
-      {/* Auto-Fill Progress */}
-      {isAutoFilling && (
-        <div style={{ 
-          padding: '15px', 
-          backgroundColor: '#e9ecef', 
-          border: '1px solid #dee2e6', 
-          borderRadius: '4px', 
-          marginBottom: '15px'
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '10px'
-          }}>
-            <h5 style={{ margin: '0', fontSize: '14px', fontWeight: '600', color: '#333' }}>
-              Creating Product in Progress:
-            </h5>
-            <span style={{ 
-              fontSize: '12px', 
-              color: '#007bff', 
-              fontWeight: '600',
-              backgroundColor: '#fff',
-              padding: '4px 8px',
-              borderRadius: '12px',
-              border: '1px solid #007bff'
-            }}>
-              {autoFillProgress.length} / 6 steps
-            </span>
-          </div>
-          <ul style={{ listStyle: 'none', padding: '0', margin: '0' }}>
-            {autoFillProgress.map((item, index) => (
-              <li key={index} style={{ 
-                marginBottom: '5px', 
-                fontSize: '13px', 
-                color: '#555',
-                lineHeight: '1.4'
-              }}>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Debug Information */}
-      <div style={{ 
-        marginTop: '20px', 
-        padding: '15px', 
-        backgroundColor: '#f8f9fa', 
-        borderRadius: '4px',
-        border: '1px solid #dee2e6'
-      }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          marginBottom: '10px'
-        }}>
-          <h4 style={{ margin: '0', fontSize: '14px', fontWeight: '600', color: '#495057' }}>
-            🐛 Debug Information:
-          </h4>
-          <button 
-            onClick={verifyFormValues}
-            style={{
-              padding: '6px 12px',
-              backgroundColor: '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '11px'
-            }}
-          >
-            🔍 Verify Values
-          </button>
-        </div>
-        <div style={{ fontSize: '11px', color: '#6c757d', lineHeight: '1.4' }}>
-          <div><strong>Search Query:</strong> {searchQuery || 'None'}</div>
-          <div><strong>Products Found:</strong> {discoveredProducts.length}</div>
-          <div><strong>Selected Product:</strong> {selectedProduct ? selectedProduct.title : 'None'}</div>
-          <div><strong>Product Creation Status:</strong> {isAutoFilling ? 'In Progress' : 'Ready'}</div>
-          <div><strong>ProductDiscovery Value:</strong> {value?.productDiscovery ? 'Set' : 'Not set'}</div>
-          <div><strong>Creation Progress:</strong> {autoFillProgress.length} / 6 steps</div>
-        </div>
-      </div>
-
-      {/* Success Message */}
-      {success && (
-        <div style={{ 
-          padding: '15px', 
-          backgroundColor: '#d4edda', 
-          border: '1px solid #c3e6cb', 
-          borderRadius: '4px', 
-          color: '#155724',
-          marginBottom: '15px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '18px' }}>✅</span>
-            <div>
-              <strong>{success}</strong>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }; 
