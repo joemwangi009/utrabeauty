@@ -104,10 +104,13 @@ export async function POST(request: NextRequest) {
     if (product.warranty && product.warranty.toLowerCase().includes('warranty')) tags.push('warranty');
     if (product.productSpecs) {
       Object.values(product.productSpecs).forEach(spec => {
-        if (spec && spec.toLowerCase().includes('certified')) tags.push('certified');
-        if (spec && spec.toLowerCase().includes('iso')) tags.push('iso-certified');
-        if (spec && spec.toLowerCase().includes('ce')) tags.push('ce-marked');
-        if (spec && spec.toLowerCase().includes('fcc')) tags.push('fcc-approved');
+        if (spec && typeof spec === 'string') {
+          const specLower = spec.toLowerCase();
+          if (specLower.includes('certified')) tags.push('certified');
+          if (specLower.includes('iso')) tags.push('iso-certified');
+          if (specLower.includes('ce')) tags.push('ce-marked');
+          if (specLower.includes('fcc')) tags.push('fcc-approved');
+        }
       });
     }
     
