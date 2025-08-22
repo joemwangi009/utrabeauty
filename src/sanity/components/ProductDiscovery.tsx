@@ -120,45 +120,74 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
       console.log('🚀 Starting direct product creation for:', product.title);
       setAutoFillProgress(prev => [...prev, `🚀 Creating product: ${product.title.substring(0, 30)}...`]);
       
-      // Call the API to directly create the product
-      const response = await fetch('/api/products/create-from-alibaba', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          product: product,
-          categoryId: 'default-category' // You can make this selectable
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setAutoFillProgress(prev => [...prev, `✅ Product created successfully!`]);
-        setAutoFillProgress(prev => [...prev, `📝 Title: ${data.product.title}`]);
-        setAutoFillProgress(prev => [...prev, `💰 Price: $${data.product.price}`]);
-        setAutoFillProgress(prev => [...prev, `🏪 Supplier: ${data.product.supplierName}`]);
-        setAutoFillProgress(prev => [...prev, `🔗 Slug: ${data.product.slug}`]);
-        setAutoFillProgress(prev => [...prev, `📅 Imported: ${new Date(data.product.importedAt).toLocaleDateString()}`]);
-        
-        setIsAutoFilling(false);
-        setAutoFillSuccess(true);
-        setTimeout(() => setAutoFillSuccess(false), 10000); // Show success for 10 seconds
-        
-        console.log(`✅ Product created successfully:`, data.product);
-        
-        // Show success message with product details
-        setSuccess(`🎉 Product "${data.product.title}" has been successfully added to your platform!`);
-        setTimeout(() => setSuccess(null), 10000);
-        
-      } else {
-        throw new Error(data.error || 'Failed to create product');
-      }
-
+      // Since we're already in Sanity Studio, we can use the existing form structure
+      // The product will be created when the user saves the document
+      setAutoFillProgress(prev => [...prev, `✅ Product data prepared for Sanity`]);
+      setAutoFillProgress(prev => [...prev, `📝 Title: ${product.title}`]);
+      setAutoFillProgress(prev => [...prev, `💰 Price: ${product.price}`]);
+      setAutoFillProgress(prev => [...prev, `🏪 Supplier: ${product.supplierName}`]);
+      
+      // Update the form with the selected product data
+      const patches = [
+        set(product.title, ['title']),
+        set(product.description, ['description']),
+        set(parseFloat(product.price.replace(/[^\d.,]/g, '')) || 0, ['price']),
+        set(product.images[0] || '', ['image']),
+        set(product.url, ['supplierUrl']),
+        set(product.supplierName, ['supplierName']),
+        set(true, ['importedFromAlibaba']),
+        set(100, ['stock']),
+        set(true, ['isActive']),
+        set({
+          _type: 'slug',
+          current: product.title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, 96)
+        }, ['slug']),
+        set(['alibaba', 'imported', 'electronics'], ['tags']),
+        set({
+          importedFrom: 'alibaba',
+          importedAt: new Date().toISOString(),
+          originalUrl: product.url,
+          supplierRating: 0,
+          productRating: 0,
+          soldCount: 0,
+          shippingInfo: {
+            free: product.shippingInfo?.includes('free') || false,
+            cost: 0,
+            estimatedDays: 0,
+            fromCountry: 'Unknown'
+          },
+          variants: 0,
+          specifications: Object.keys(product.productSpecs || {}).length
+        }, ['importMetadata']),
+        set(new Date().toISOString(), ['createdAt']),
+        set(new Date().toISOString(), ['updatedAt'])
+      ];
+      
+      // Apply all patches at once
+      onChange(PatchEvent.from(patches));
+      
+      setAutoFillProgress(prev => [...prev, `✅ Product form populated successfully!`]);
+      setAutoFillProgress(prev => [...prev, `💾 Ready to save in Sanity Studio`]);
+      
+      setIsAutoFilling(false);
+      setAutoFillSuccess(true);
+      setTimeout(() => setAutoFillSuccess(false), 10000);
+      
+      console.log(`✅ Product form populated successfully:`, product.title);
+      
+      // Show success message
+      setSuccess(`🎉 Product "${product.title}" has been prepared! Click "Publish" in Sanity Studio to save it.`);
+      setTimeout(() => setSuccess(null), 10000);
+      
     } catch (error) {
-      console.error('❌ Product creation error:', error);
-      setError(`Failed to create product: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ Product preparation error:', error);
+      setError(`Failed to prepare product: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsAutoFilling(false);
     }
   };
@@ -605,7 +634,7 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
                       transition: 'background-color 0.2s ease'
                     }}
                   >
-                    {isAutoFilling ? '🚀 Creating...' : '🚀 Add to Platform'}
+                    {isAutoFilling ? '📝 Preparing...' : '📝 Fill Form'}
                   </button>
                 </div>
               </div>
