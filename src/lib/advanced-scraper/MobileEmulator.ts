@@ -198,14 +198,21 @@ export class MobileEmulator {
     });
 
     // Set mobile-specific permissions
-    const context = page.context();
-    if (context) {
-      await context.overridePermissions('https://www.alibaba.com', [
-        'geolocation',
-        'notifications',
-        'camera',
-        'microphone'
-      ]);
+    // Note: context() method is not available in all Puppeteer versions
+    // This is optional and won't affect core functionality
+    try {
+      const context = (page as any).context?.();
+      if (context && typeof context.overridePermissions === 'function') {
+        await context.overridePermissions('https://www.alibaba.com', [
+          'geolocation',
+          'notifications',
+          'camera',
+          'microphone'
+        ]);
+      }
+    } catch (error) {
+      // Permissions override is optional, continue without it
+      console.log('⚠️ Could not override permissions (this is normal)');
     }
 
     console.log(`✅ Mobile device emulation completed for ${targetDevice.name}`);
