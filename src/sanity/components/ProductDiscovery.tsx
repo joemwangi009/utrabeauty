@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { set, unset } from 'sanity';
 import { PatchEvent } from 'sanity';
+import { Stack, Card, Text, Button, TextInput, Select, Box, Flex, Grid, Badge, Spinner } from '@sanity/ui';
 
 interface ProductDiscoveryProps {
   onChange: (patch: PatchEvent) => void;
@@ -209,246 +210,250 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({
   // If readOnly, show a simple message
   if (readOnly) {
     return (
-      <div className="p-4 bg-gray-50 border border-gray-200 rounded">
-        <p className="text-gray-600">Product Discovery component is read-only</p>
-      </div>
+      <Card padding={4} tone="primary">
+        <Text>Product Discovery component is read-only</Text>
+      </Card>
     );
   }
 
   return (
-    <div className="p-6 bg-white rounded-lg border border-gray-200" style={{ minHeight: '400px' }}>
+    <Stack space={4}>
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          🚀 Alibaba Product Discovery & Import
-        </h2>
-        <p className="text-gray-600">
-          Search for products on Alibaba and import them directly to your catalog with one click.
-        </p>
-      </div>
+      <Card padding={4} tone="primary">
+        <Stack space={3}>
+          <Text size={4} weight="semibold">
+            🚀 Alibaba Product Discovery & Import
+          </Text>
+          <Text size={2} muted>
+            Search for products on Alibaba and import them directly to your catalog with one click.
+          </Text>
+        </Stack>
+      </Card>
 
       {/* Search Interface */}
-      <div className="mb-6">
-        <div className="flex gap-3 mb-4">
-          <div className="flex-1">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for products (e.g., 'wireless headphones', 'smartphone cases')"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            onKeyPress={(e) => e.key === 'Enter' && searchProducts()}
-            />
-          </div>
-          <button 
-            onClick={searchProducts}
-            disabled={isSearching}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-          >
-            {isSearching ? '🔍 Searching...' : '🔍 Search'}
-          </button>
-          {discoveredProducts.length > 0 && (
-            <button
-              onClick={clearSearch}
-              className="px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-medium"
+      <Card padding={4}>
+        <Stack space={4}>
+          <Flex gap={3}>
+            <Box flex={1}>
+              <TextInput
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.currentTarget.value)}
+                placeholder="Search for products (e.g., 'wireless headphones', 'smartphone cases')"
+                onKeyPress={(e) => e.key === 'Enter' && searchProducts()}
+                disabled={isSearching}
+              />
+            </Box>
+            <Button 
+              onClick={searchProducts}
+              disabled={isSearching}
+              tone="primary"
             >
-              🗑️ Clear
-            </button>
-          )}
-        </div>
+              {isSearching ? '🔍 Searching...' : '🔍 Search'}
+            </Button>
+            {discoveredProducts.length > 0 && (
+              <Button
+                onClick={clearSearch}
+                tone="default"
+              >
+                🗑️ Clear
+              </Button>
+            )}
+          </Flex>
 
-        {/* Advanced Filters */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <select
-            value={filters.category}
-            onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">All Categories</option>
-            <option value="electronics">Electronics</option>
-            <option value="clothing">Clothing</option>
-            <option value="home">Home & Garden</option>
-            <option value="beauty">Beauty & Health</option>
-            <option value="sports">Sports & Outdoor</option>
-          </select>
-          
-          <input
-            type="number"
-            placeholder="Min Price"
-            value={filters.minPrice}
-            onChange={(e) => setFilters(prev => ({ ...prev, minPrice: e.target.value }))}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-          
-          <input
-            type="number"
-            placeholder="Max Price"
-            value={filters.maxPrice}
-            onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-          
-          <select
-            value={filters.sortBy}
-            onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value as any }))}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="relevance">Relevance</option>
-            <option value="price">Price: Low to High</option>
-            <option value="newest">Newest</option>
-            <option value="rating">Highest Rating</option>
-            <option value="sold">Most Sold</option>
-          </select>
-          
-          <select
-            value={filters.supplierRating}
-            onChange={(e) => setFilters(prev => ({ ...prev, supplierRating: e.target.value }))}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Any Rating</option>
-            <option value="4.5">4.5+ Stars</option>
-            <option value="4.0">4.0+ Stars</option>
-            <option value="3.5">3.5+ Stars</option>
-          </select>
-        </div>
-      </div>
+          {/* Advanced Filters */}
+          <Grid columns={[2, 2, 5]} gap={3}>
+            <Select
+              value={filters.category}
+              onChange={(event) => setFilters(prev => ({ ...prev, category: event.currentTarget.value }))}
+            >
+              <option value="">All Categories</option>
+              <option value="electronics">Electronics</option>
+              <option value="clothing">Clothing</option>
+              <option value="home">Home & Garden</option>
+              <option value="beauty">Beauty & Health</option>
+              <option value="sports">Sports & Outdoor</option>
+            </Select>
+            
+            <TextInput
+              type="number"
+              placeholder="Min Price"
+              value={filters.minPrice}
+              onChange={(event) => setFilters(prev => ({ ...prev, minPrice: event.currentTarget.value }))}
+            />
+            
+            <TextInput
+              type="number"
+              placeholder="Max Price"
+              value={filters.maxPrice}
+              onChange={(event) => setFilters(prev => ({ ...prev, maxPrice: event.currentTarget.value }))}
+            />
+            
+            <Select
+              value={filters.sortBy}
+              onChange={(event) => setFilters(prev => ({ ...prev, sortBy: event.currentTarget.value as any }))}
+            >
+              <option value="relevance">Relevance</option>
+              <option value="price">Price: Low to High</option>
+              <option value="newest">Newest</option>
+              <option value="rating">Highest Rating</option>
+              <option value="sold">Most Sold</option>
+            </Select>
+            
+            <Select
+              value={filters.supplierRating}
+              onChange={(event) => setFilters(prev => ({ ...prev, supplierRating: event.currentTarget.value }))}
+            >
+              <option value="">Any Rating</option>
+              <option value="4.5">4.5+ Stars</option>
+              <option value="4.0">4.0+ Stars</option>
+              <option value="3.5">3.5+ Stars</option>
+            </Select>
+          </Grid>
+        </Stack>
+      </Card>
 
       {/* Error Message */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-center">
-            <span className="text-red-600 text-xl mr-2">❌</span>
-            <span className="text-red-800">{error}</span>
-          </div>
-        </div>
+        <Card padding={4} tone="critical">
+          <Flex align="center" gap={2}>
+            <Text size={2}>❌</Text>
+            <Text size={2}>{error}</Text>
+          </Flex>
+        </Card>
       )}
 
       {/* Success Message */}
       {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center">
-            <span className="text-green-600 text-xl mr-2">✅</span>
-            <span className="text-green-800">{success}</span>
-          </div>
-        </div>
+        <Card padding={4} tone="positive">
+          <Flex align="center" gap={2}>
+            <Text size={2}>✅</Text>
+            <Text size={2}>{success}</Text>
+          </Flex>
+        </Card>
       )}
 
       {/* Import Progress */}
       {importProgress.length > 0 && (
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">📊 Import Progress:</h4>
-          <div className="space-y-1">
-            {importProgress.map((message, index) => (
-              <div key={index} className="text-sm text-blue-800">
-                {message}
-              </div>
-            ))}
-          </div>
-        </div>
+        <Card padding={4} tone="primary">
+          <Stack space={3}>
+            <Text size={2} weight="semibold">📊 Import Progress:</Text>
+            <Stack space={2}>
+              {importProgress.map((message, index) => (
+                <Text key={index} size={1}>
+                  {message}
+                </Text>
+              ))}
+            </Stack>
+          </Stack>
+        </Card>
       )}
 
       {/* Search Results */}
       {discoveredProducts.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            🔍 Found {discoveredProducts.length} products
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {discoveredProducts.map((product) => (
-              <div 
-                key={product.id} 
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
-              >
-                {/* Product Image */}
-                <div className="mb-3">
-                  <img
-                    src={product.images[0] || '/placeholder-product.jpg'}
-                      alt={product.title}
-                    className="w-full h-32 object-cover rounded-md"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/placeholder-product.jpg';
-                      }}
+        <Card padding={4}>
+          <Stack space={4}>
+            <Text size={3} weight="semibold">
+              🔍 Found {discoveredProducts.length} products
+            </Text>
+            <Grid columns={[1, 2, 3]} gap={4}>
+              {discoveredProducts.map((product) => (
+                <Card key={product.id} padding={3} shadow={1}>
+                  <Stack space={3}>
+                    {/* Product Image */}
+                    <Box>
+                      <img
+                        src={product.images[0] || '/placeholder-product.jpg'}
+                        alt={product.title}
+                        style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '4px' }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/placeholder-product.jpg';
+                        }}
+                      />
+                    </Box>
+                    
+                    {/* Product Info */}
+                    <Stack space={2}>
+                      <Text size={2} weight="semibold" style={{ lineHeight: '1.4' }}>
+                        {product.title}
+                      </Text>
+                      
+                      <Flex justify="space-between" align="center">
+                        <Text size={3} weight="bold" style={{ color: 'var(--card-fg-color)' }}>
+                          {formatPrice(product.price)}
+                        </Text>
+                        {product.originalPrice && (
+                          <Text size={1} muted style={{ textDecoration: 'line-through' }}>
+                            {formatPrice(product.originalPrice)}
+                          </Text>
+                        )}
+                      </Flex>
+
+                      <Flex align="center" gap={2}>
+                        <Text size={1} muted>{product.supplierName}</Text>
+                        {product.supplierRating && (
+                          <Text size={1} style={{ color: 'var(--card-fg-color)' }}>
+                            {getRatingStars(product.supplierRating)}
+                          </Text>
+                        )}
+                      </Flex>
+
+                      {product.soldCount && (
+                        <Text size={1} muted>
+                          📦 {product.soldCount.toLocaleString()} sold
+                        </Text>
+                      )}
+                      
+                      {product.shippingInfo && (
+                        <Text size={1} muted>
+                          🚚 {product.shippingInfo.free ? 'Free Shipping' : `$${product.shippingInfo.cost} shipping`}
+                        </Text>
+                      )}
+                    </Stack>
+                    
+                    {/* Import Button */}
+                    <Button
+                      onClick={() => importProduct(product)}
+                      disabled={isImporting}
+                      tone="positive"
+                      text="📥 Import to Catalog"
                     />
-                  </div>
-                
-                {/* Product Info */}
-                <div className="mb-3">
-                  <h4 className="font-medium text-gray-900 text-sm line-clamp-2 mb-2">
-                    {product.title}
-                  </h4>
-                  
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-lg font-bold text-blue-600">
-                      {formatPrice(product.price)}
-                    </span>
-                    {product.originalPrice && (
-                      <span className="text-sm text-gray-500 line-through">
-                        {formatPrice(product.originalPrice)}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-gray-600">{product.supplierName}</span>
-                    {product.supplierRating && (
-                      <span className="text-xs text-yellow-600">
-                        {getRatingStars(product.supplierRating)}
-                      </span>
-                    )}
-                  </div>
-
-                  {product.soldCount && (
-                    <div className="text-xs text-gray-500 mb-2">
-                      📦 {product.soldCount.toLocaleString()} sold
-                    </div>
-                  )}
-                  
-                  {product.shippingInfo && (
-                    <div className="text-xs text-gray-500 mb-2">
-                      🚚 {product.shippingInfo.free ? 'Free Shipping' : `$${product.shippingInfo.cost} shipping`}
-                    </div>
-                  )}
-                  </div>
-                  
-                {/* Import Button */}
-                  <button
-                  onClick={() => importProduct(product)}
-                  disabled={isImporting}
-                  className="w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
-                >
-                  {isImporting && selectedProduct?.id === product.id ? '🔄 Importing...' : '📥 Import to Catalog'}
-                  </button>
-              </div>
-            ))}
-          </div>
-        </div>
+                  </Stack>
+                </Card>
+              ))}
+            </Grid>
+          </Stack>
+        </Card>
       )}
 
       {/* No Results Message */}
       {!isSearching && discoveredProducts.length === 0 && searchQuery && !error && (
-        <div className="text-center py-8">
-          <div className="text-gray-400 text-6xl mb-4">🔍</div>
-          <p className="text-gray-600">No products found for &quot;{searchQuery}&quot;</p>
-          <p className="text-gray-500 text-sm mt-2">Try adjusting your search terms or filters</p>
-        </div>
+        <Card padding={6} tone="default">
+          <Stack space={4}>
+            <Text size={6}>🔍</Text>
+            <Text size={3} weight="semibold">No products found for &quot;{searchQuery}&quot;</Text>
+            <Text size={2} muted>Try adjusting your search terms or filters</Text>
+          </Stack>
+        </Card>
       )}
 
       {/* Initial State */}
       {!searchQuery && discoveredProducts.length === 0 && !error && !success && (
-        <div className="text-center py-12">
-          <div className="text-blue-400 text-6xl mb-4">🚀</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Ready to Discover Products</h3>
-          <p className="text-gray-600 mb-4">
-            Enter a search term above to find products on Alibaba
-          </p>
-          <div className="text-sm text-gray-500 space-y-1">
-                         <p>💡 Try searching for: &quot;wireless headphones&quot;, &quot;smartphone cases&quot;, &quot;kitchen appliances&quot;</p>
-            <p>🔍 Use filters to narrow down results by price, category, or supplier rating</p>
-                         <p>📥 Click &quot;Import to Catalog&quot; to add products with one click</p>
-          </div>
-        </div>
+        <Card padding={6} tone="default">
+          <Stack space={4}>
+            <Text size={6} style={{ color: 'var(--card-fg-color)' }}>🚀</Text>
+            <Text size={3} weight="semibold">Ready to Discover Products</Text>
+            <Text size={2} muted>
+              Enter a search term above to find products on Alibaba
+            </Text>
+            <Stack space={2}>
+                             <Text size={1} muted>💡 Try searching for: &quot;wireless headphones&quot;, &quot;smartphone cases&quot;, &quot;kitchen appliances&quot;</Text>
+               <Text size={1} muted>🔍 Use filters to narrow down results by price, category, or supplier rating</Text>
+               <Text size={1} muted>📥 Click &quot;Import to Catalog&quot; to add products with one click</Text>
+            </Stack>
+          </Stack>
+        </Card>
       )}
-    </div>
+    </Stack>
   );
 }; 
