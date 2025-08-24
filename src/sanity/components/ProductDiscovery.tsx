@@ -207,16 +207,16 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
       <div className="mb-6">
         <div className="flex gap-3 mb-4">
           <div className="flex-1">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for products (e.g., 'wireless headphones', 'smartphone cases')"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              onKeyPress={(e) => e.key === 'Enter' && searchProducts()}
+            onKeyPress={(e) => e.key === 'Enter' && searchProducts()}
             />
           </div>
-          <button
+          <button 
             onClick={searchProducts}
             disabled={isSearching}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
@@ -332,23 +332,23 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {discoveredProducts.map((product) => (
-              <div
-                key={product.id}
+              <div 
+                key={product.id} 
                 className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
               >
                 {/* Product Image */}
                 <div className="mb-3">
                   <img
                     src={product.images[0] || '/placeholder-product.jpg'}
-                    alt={product.title}
+                      alt={product.title}
                     className="w-full h-32 object-cover rounded-md"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = '/placeholder-product.jpg';
-                    }}
-                  />
-                </div>
-
+                      }}
+                    />
+                  </div>
+                
                 {/* Product Info */}
                 <div className="mb-3">
                   <h4 className="font-medium text-gray-900 text-sm line-clamp-2 mb-2">
@@ -380,22 +380,22 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
                       📦 {product.soldCount.toLocaleString()} sold
                     </div>
                   )}
-
+                  
                   {product.shippingInfo && (
                     <div className="text-xs text-gray-500 mb-2">
                       🚚 {product.shippingInfo.free ? 'Free Shipping' : `$${product.shippingInfo.cost} shipping`}
                     </div>
                   )}
-                </div>
-
+                  </div>
+                  
                 {/* Import Button */}
-                <button
+                  <button
                   onClick={() => importProduct(product)}
                   disabled={isImporting}
                   className="w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
                 >
                   {isImporting && selectedProduct?.id === product.id ? '🔄 Importing...' : '📥 Import to Catalog'}
-                </button>
+                  </button>
               </div>
             ))}
           </div>
