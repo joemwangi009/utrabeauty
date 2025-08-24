@@ -20,7 +20,8 @@ const envSchema = z.object({
   NEXT_PUBLIC_BASE_URL: z.string().url().optional(),
   
   // Analytics
-  UMAMI_WEBSITE_ID: z.string().min(1),
+  NEXT_PUBLIC_UMAMI_WEBSITE_ID: z.string().min(1),
+  NEXT_PUBLIC_UMAMI_HOST_URL: z.string().url(),
   
   // Node environment
   NODE_ENV: z.enum(['development', 'production', 'test']),
@@ -41,7 +42,8 @@ function loadEnv() {
       STRIPE_SECRET_KEY: 'sk_test_placeholder',
       STRIPE_WEBHOOK_SECRET: 'whsec_placeholder',
       NEXT_PUBLIC_BASE_URL: 'http://localhost:3000',
-      UMAMI_WEBSITE_ID: 'placeholder',
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: '548dea12-b06b-43e1-a75b-c4bd736005be',
+      NEXT_PUBLIC_UMAMI_HOST_URL: 'https://cloud.umami.is',
       NODE_ENV: 'development' as const,
     };
   }
@@ -56,7 +58,8 @@ function loadEnv() {
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder',
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder',
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
-    UMAMI_WEBSITE_ID: process.env.UMAMI_WEBSITE_ID || 'placeholder',
+    NEXT_PUBLIC_UMAMI_WEBSITE_ID: process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || '548dea12-b06b-43e1-a75b-c4bd736005be',
+    NEXT_PUBLIC_UMAMI_HOST_URL: process.env.NEXT_PUBLIC_UMAMI_HOST_URL || 'https://cloud.umami.is',
     NODE_ENV: (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test',
   };
 
@@ -89,6 +92,7 @@ export const {
   STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET,
   NEXT_PUBLIC_BASE_URL,
-  UMAMI_WEBSITE_ID,
+  NEXT_PUBLIC_UMAMI_WEBSITE_ID,
+  NEXT_PUBLIC_UMAMI_HOST_URL,
   NODE_ENV,
 } = env; 

@@ -1,8 +1,9 @@
 import umami from '@umami/node';
+import { env } from './env';
 
 umami.init({
-    websiteId: '(YOUR UMAMI WEBSITE ID)', // Your website id
-    hostUrl: 'https://cloud.umami.is', // URL to your Umami instance
+    websiteId: env.NEXT_PUBLIC_UMAMI_WEBSITE_ID,
+    hostUrl: env.NEXT_PUBLIC_UMAMI_HOST_URL,
 });
 
 export const umamiTrackCheckoutSuccessEvent = async (payload: {

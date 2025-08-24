@@ -25,4 +25,9 @@ NEXTAUTH_URL=http://localhost:3000
 # Stripe Configuration (if using payments)
 STRIPE_SECRET_KEY=your_stripe_secret_key
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
-STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret 
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+
+# Umami Analytics Configuration
+# Your Umami dashboard credentials from https://umami.is
+NEXT_PUBLIC_UMAMI_WEBSITE_ID=548dea12-b06b-43e1-a75b-c4bd736005be
+NEXT_PUBLIC_UMAMI_HOST_URL=https://cloud.umami.is 
