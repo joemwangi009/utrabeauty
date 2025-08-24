@@ -5,6 +5,12 @@ import { PatchEvent } from 'sanity';
 interface ProductDiscoveryProps {
   onChange: (patch: PatchEvent) => void;
   value?: any;
+  type?: any;
+  markers?: any[];
+  presence?: any[];
+  onFocus?: () => void;
+  onBlur?: () => void;
+  readOnly?: boolean;
 }
 
 interface DiscoveredProduct {
@@ -43,7 +49,16 @@ interface SearchFilters {
   supplierRating: string;
 }
 
-export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, value }) => {
+export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ 
+  onChange, 
+  value, 
+  type, 
+  markers, 
+  presence, 
+  onFocus, 
+  onBlur, 
+  readOnly 
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [discoveredProducts, setDiscoveredProducts] = useState<DiscoveredProduct[]>([]);
@@ -191,8 +206,17 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
     return '⭐'.repeat(fullStars) + (hasHalfStar ? '⭐' : '') + '☆'.repeat(5 - fullStars - (hasHalfStar ? 1 : 0));
   };
 
+  // If readOnly, show a simple message
+  if (readOnly) {
+    return (
+      <div className="p-4 bg-gray-50 border border-gray-200 rounded">
+        <p className="text-gray-600">Product Discovery component is read-only</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 bg-white rounded-lg border border-gray-200">
+    <div className="p-6 bg-white rounded-lg border border-gray-200" style={{ minHeight: '400px' }}>
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -289,36 +313,35 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
         </div>
       </div>
 
-      {/* Error Messages */}
+      {/* Error Message */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-center">
-            <span className="text-red-600 mr-2">❌</span>
+            <span className="text-red-600 text-xl mr-2">❌</span>
             <span className="text-red-800">{error}</span>
           </div>
         </div>
       )}
 
-      {/* Success Messages */}
+      {/* Success Message */}
       {success && (
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-center">
-            <span className="text-green-600 mr-2">✅</span>
+            <span className="text-green-600 text-xl mr-2">✅</span>
             <span className="text-green-800">{success}</span>
           </div>
         </div>
       )}
 
       {/* Import Progress */}
-      {isImporting && (
+      {importProgress.length > 0 && (
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center mb-2">
-            <span className="text-blue-600 mr-2">🔄</span>
-            <span className="text-blue-800 font-medium">Importing Product...</span>
-          </div>
+          <h4 className="font-medium text-blue-900 mb-2">📊 Import Progress:</h4>
           <div className="space-y-1">
-            {importProgress.map((step, index) => (
-              <div key={index} className="text-sm text-blue-700">{step}</div>
+            {importProgress.map((message, index) => (
+              <div key={index} className="text-sm text-blue-800">
+                {message}
+              </div>
             ))}
           </div>
         </div>
@@ -326,9 +349,9 @@ export const ProductDiscovery: React.FC<ProductDiscoveryProps> = ({ onChange, va
 
       {/* Search Results */}
       {discoveredProducts.length > 0 && (
-        <div className="mb-6">
+        <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            📦 Found {discoveredProducts.length} Products
+            🔍 Found {discoveredProducts.length} products
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {discoveredProducts.map((product) => (
